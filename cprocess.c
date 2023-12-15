@@ -1,7 +1,7 @@
 #include "compiler.h"
 #include <stdio.h>
 #include <stdlib.h>
-struct compiler_process *compile_process_create(const char *filename, const char *file_name_out, int flags)
+struct compiler_process *compiler_process_create(const char *filename, const char *file_name_out, int flags)
 {
     FILE *file = fopen(filename, "r");
     if (!file)
@@ -28,7 +28,7 @@ struct compiler_process *compile_process_create(const char *filename, const char
 }
 
 
-char compile_process_next_char(struct lex_process* lex_process){
+char compiler_process_next_char(struct lex_process* lex_process){
     struct compiler_process* compiler = lex_process->compiler;
     compiler->pos.col += 1;
 
@@ -43,14 +43,14 @@ char compile_process_next_char(struct lex_process* lex_process){
     return c;
 }
 
-char compile_process_peek_char(struct lex_process* lex_process){
+char compiler_process_peek_char(struct lex_process* lex_process){
     struct compiler_process* compiler = lex_process->compiler;
     char c = getc(compiler->cfile.fp);
     ungetc(c,compiler->cfile.fp);
     return c;
 }
 
-void compile_process_push_char(struct lex_process* lex_process,char c){
+void compiler_process_push_char(struct lex_process* lex_process,char c){
     struct compiler_process* compiler = lex_process->compiler;
 
     ungetc(c,compiler->cfile.fp);
