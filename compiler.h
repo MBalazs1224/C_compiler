@@ -2,6 +2,7 @@
 #define COMPILER_H
 #include <stdio.h>
 #include <stdbool.h>
+#include <string.h>
 
 #define S_EQ(str, str2) \
     (str && str2 && (strcmp(str, str2) == 0))
@@ -151,8 +152,76 @@ struct compiler_process
 
     //A vector of tokens from lexical analysis.
     struct vector* token_vec;
-    
+    struct vector* node_vec;
+    struct vector* node_tree_vec;
     FILE *ofile;
+};
+
+enum
+{
+    PARSE_ALL_OK,
+    PARSE_GENERAL_ERROR
+};
+
+enum
+{
+    NODE_TYPE_EXPRESSION,
+    NODE_TYPE_EXPRESSION_PRAENTHESIS,
+    NODE_TYPE_NUMBER,
+    NODE_TYPE_IDENTIFIER,
+    NODE_TYPE_STRING,
+    NODE_TYPE_VARIABLE,
+    NODE_TYPE_VARIABLE_LIST,
+    NODE_TYPE_FUNCTION,
+    NODE_TYPE_BODY,
+    NODE_TYPE_STATEMENT_RETURN,
+    NODE_TYPE_STATEMENT_IF,
+    NODE_TYPE_STATEMENT_ELSE,
+    NODE_TYPE_STATEMENT_WHILE,
+    NODE_TYPE_STATEMENT_DO_WHILE,
+    NODE_TYPE_STATEMENT_FOR,
+    NODE_TYPE_STATEMENT_BREAK,
+    NODE_TYPE_STATEMENT_CONTINUE,
+    NODE_TYPE_STATEMENT_SWITCH,
+    NODE_TYPE_STATEMENT_CASE,
+    NODE_TYPE_STATEMENT_DEFAULT,
+    NODE_TYPE_STATEMENT_GOTO,
+
+
+    NODE_TYPE_UNARY,
+    NODE_TYPE_TENARY,
+    NODE_TYPE_LABEL,
+    NODE_TYPE_STRUCT,
+    NODE_TYPE_UNION,
+    NODE_TYPE_BRACKET,
+    NODE_TYPE_CAST,
+    NODE_TYPE_BLANK
+
+};
+
+struct node
+{
+    int type;
+    int flags;
+
+    struct pos pos;
+    struct node_binded
+    {
+        //Pointer tp body node / owner
+        struct node* owner;
+        //Pointer to the function that this node is in
+        struct node* function;
+    } binded;
+
+    union 
+    {
+        char cval;
+        const char* sval;
+        unsigned int inum;
+        unsigned long lnum;
+        unsigned long long llnum;
+    };
+    
 };
 
 int compile_file(const char *filename, const char *out_filename, int flags);
@@ -174,6 +243,8 @@ void *lex_process_private(struct lex_process *process);
 struct vector *lex_process_tokens(struct lex_process *process);
 
 int lex(struct lex_process *process);
+int parse(struct compiler_process* process);
+
 
 void compiler_error(struct compiler_process *compiler, const char *msg, ...);
 
@@ -182,5 +253,12 @@ void compiler_warning(struct compiler_process *compiler, const char *msg, ...);
 //Builds tokens for the input string
 struct lex_process* token_build_for_string(struct compiler_process* compiler,const char*str);
 bool token_is_keyword(struct token *token, const char *value);
+bool token_is_nl_or_comment_or_newline_seperator(struct token* token);
+bool token_is_symbol(struct token* token, char c);
+struct node* node_create(struct node* _node);
+struct node* node_pop();
+struct node* node_peek();
+struct node* node_peek_or_null();
+void node_push(struct node* node);void node_set_vector(struct vector* vec, struct vector* root_vec);
 
 #endif

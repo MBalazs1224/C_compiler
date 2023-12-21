@@ -1,6 +1,7 @@
 #include "compiler.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include "helpers/vector.h"
 struct compiler_process *compiler_process_create(const char *filename, const char *file_name_out, int flags)
 {
     FILE *file = fopen(filename, "r");
@@ -20,6 +21,8 @@ struct compiler_process *compiler_process_create(const char *filename, const cha
     }
 
     struct compiler_process* process = calloc(1,sizeof(struct compiler_process));
+    process->node_vec = vector_create(sizeof(struct node*));
+    process->node_tree_vec = vector_create(sizeof(struct node*));
     process->flags = flags;
     process->cfile.fp = file;
     process->ofile = out_file;
@@ -34,7 +37,7 @@ char compiler_process_next_char(struct lex_process* lex_process){
 
     char c = getc(compiler->cfile.fp);
 
-    if (c=="\n")
+    if (c=='\n')
     {
        compiler->pos.line+=1;
        compiler->pos.col=1;

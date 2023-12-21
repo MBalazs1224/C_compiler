@@ -1,5 +1,6 @@
 #include "compiler.h"
 #include <stdlib.h>
+#include <stdarg.h>
 
 struct lex_process_functions compiler_lex_functions = {
     .next_char=compiler_process_next_char,
@@ -15,7 +16,7 @@ void compiler_error(struct compiler_process* compiler,const char* msg,...){
     fprintf(stderr, " on line %i, col %i in file %s\n",compiler->pos.line,compiler->pos.col,compiler->pos.filename);
     exit(-1);
 
-}
+}   
 
 void compiler_warning(struct compiler_process* compiler,const char* msg,...){
     va_list args;
@@ -47,6 +48,12 @@ int compile_file(const char* filename, const char* out_filename, int flags)
 
     process->token_vec = lex_process->token_vec;
     //perform parsing
+
+    if (parse(process) != PARSE_ALL_OK)
+    {
+        return COMPILER_FAILED_WITH_ERRORS;
+    }
+    
 
     //perorm code generation
     return COMPILER_FILE_COMPILED_OK;
