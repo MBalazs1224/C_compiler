@@ -9,7 +9,7 @@
 // check the expression for every character than adds to buffer
 // LEX_GETC_IF(buffer,current_char,(50 > 90))
 #define LEX_GETC_IF(buffer, c, exp)      \
-    for (c = peekc(); exp; c == peekc()) \
+    for (c = peekc(); exp; c = peekc()) \
     {                                    \
         buffer_write(buffer, c);         \
         nextc();                         \
