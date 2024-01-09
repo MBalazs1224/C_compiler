@@ -65,7 +65,7 @@ struct token *token_create(struct token *_token)
 {
     memcpy(&tmp_token, _token, sizeof(struct token));
     tmp_token.pos = lex_file_position();
-    if (lex_is_in_expression)
+    if (lex_is_in_expression())
     {
         tmp_token.between_brackets = buffer_ptr(lex_process->parenthesis_buffer);
     }
