@@ -159,10 +159,7 @@ int parse_next()
     case TOKEN_TYPE_IDENTIFIER:
     case TOKEN_TYPE_STRING:
         parse_single_token_to_node();
-        parse_exp((history_begin(0)));
-        break;
-
-    default:
+        //parse_exp((history_begin(0)));
         break;
     }
 
@@ -174,8 +171,8 @@ int parse(struct compiler_process *process)
     current_process = process;
     parser_last_token = NULL;
     node_set_vector(process->node_vec,process->node_tree_vec);
-    vector_set_peek_pointer(process->token_vec, 0);
     struct node *node = NULL;
+    vector_set_peek_pointer(process->token_vec, 0);
     while (parse_next() == 0)
     {
         node = node_peek();

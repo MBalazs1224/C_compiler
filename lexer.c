@@ -333,7 +333,7 @@ static struct token *token_make_identifier_or_keyword()
 {
     struct buffer *buffer = buffer_create();
     char c = 0;
-    LEX_GETC_IF(buffer, c, ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c <= '0' && c <= '9') || c == '_'));
+    LEX_GETC_IF(buffer, c, ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_'));
 
     // NULL terminator
     buffer_write(buffer, 0x00);
