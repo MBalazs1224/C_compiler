@@ -255,7 +255,6 @@ struct lex_process *lex_process_create(struct compiler_process *compiler, struct
 void lex_process_free(struct lex_process *process);
 
 void *lex_process_private(struct lex_process *process);
-
 struct vector *lex_process_tokens(struct lex_process *process);
 
 int lex(struct lex_process *process);

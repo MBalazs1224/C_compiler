@@ -541,6 +541,7 @@ int lex(struct lex_process *process)
     lex_process = process;
     process->pos.filename = process->compiler->cfile.abs_path;
 
+
     struct token *token = read_next_token();
     while (token)
     {

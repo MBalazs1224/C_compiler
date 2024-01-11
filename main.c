@@ -9,6 +9,7 @@ int main(){
     {
         printf("FINE\n");
     }
+    
     else if (res == COMPILER_FAILED_WITH_ERRORS){
         printf("ERRORS\n");
     }

@@ -27,6 +27,7 @@ struct node* node_peek()
     return *(struct node**)(vector_back(node_vector));
 }
 
+
 struct node* node_pop()
 {
     struct node* last_node = vector_back_ptr(node_vector);

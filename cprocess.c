@@ -9,7 +9,6 @@ struct compiler_process *compiler_process_create(const char *filename, const cha
     {
         return NULL;
     }
-
     FILE *out_file = NULL;
     if (file_name_out)
     {
