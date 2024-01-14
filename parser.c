@@ -240,7 +240,7 @@ void parse_datatype_modifiers(struct datatype* dtype)
         }
         else if (S_EQ(token->sval,"unsigned"))
         {
-            dtype->flags &= DATATYPE_FLAG_IS_SIGNED;
+            dtype->flags &= ~DATATYPE_FLAG_IS_SIGNED;
         }
         else if (S_EQ(token->sval,"static"))
         {
@@ -419,7 +419,7 @@ void parse_datatype_type(struct datatype* dtype)
     parser_get_datatype_tokens(&datatype_token,&datatype_secondary_token);
     int expected_type = parser_datatype_expected_for_type_string(datatype_token ->sval);
 
-    //The variable name should come after struct or union i.e struct abc so we parse the name, but there are other ways:
+    //The variable name should come after struct or union i.e. struct abc, so we parse the name, but there are other ways:
     //struct {int x;} abc
     if (datatype_is_struct_or_union_for_name(datatype_token->sval))
     {
@@ -429,7 +429,7 @@ void parse_datatype_type(struct datatype* dtype)
         }
         else
         {
-            //This struct has no name so we give it a random one
+            //This struct has no name, so we give it a random one
             datatype_token = parser_build_random_type_name();
             dtype->flags |= DATATYPE_FLAG_IS_UNION_NO_NAME;
         }
