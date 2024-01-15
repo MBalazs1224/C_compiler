@@ -1,1 +1,1 @@
-int
+unsigned char
