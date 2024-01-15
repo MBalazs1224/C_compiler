@@ -464,12 +464,46 @@ void parse_datatype(struct datatype* dtype)
     parse_datatype_type(dtype);
     parse_datatype_modifiers(dtype);
 }
+bool parser_is_int_valid_after_datatype(struct datatype* dtype)
+{
+    return dtype->type == DATA_TYPE_LONG || dtype->type == DATA_TYPE_FLOAT || dtype->type == DATA_TYPE_DOUBLE;
+}
+
+void parser_ignore_int(struct datatype* dtype)
+{
+    if(!token_is_keyword(token_peek_next(),"int"))
+    {
+        //No integer to ignore.
+        return;
+    }
+    //'int int a' is not valid so we need to check if int is allowed as secondary
+    if (!parser_is_int_valid_after_datatype(dtype))
+    {
+        compiler_error(current_process,"You provided a secondary \"int\" but it's not allowed as a secondary datatype to this type.");
+
+    }
+    //Ignore the int
+    token_next();
+
+}
 
 void parse_variable_function_or_struct_union(struct history*history)
 {
     struct datatype dtype;
     parse_datatype(&dtype);
+    // Ignore integer abbreviations if necessary i.e. "long int" becomes just "long"
+    parser_ignore_int(&dtype);
 }
+
+
+
+
+
+/**
+ * long int ab
+ * sizeof(long int) and sizeof(long) is the same so we can ignore the int
+ */
+
 
 void parse_keyword(struct history*history)
 {
