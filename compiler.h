@@ -38,8 +38,10 @@ struct pos
     case '=':                            \
     case '~':                            \
     case '|':                            \
+    case '&':                            \
     case '(':                            \
     case '[':                            \
+    case ',':                            \
     case '.':                            \
     case '?'
 
@@ -305,6 +307,11 @@ struct node
             struct node* val;
             struct datatype type;
         } var;
+        struct varlist
+        {
+            // A list of struct node* variables
+            struct vector* list;
+        } var_list;
     };
     
 
