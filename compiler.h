@@ -249,6 +249,34 @@ enum
     NODE_FLAG_INSIDE_EXPRESSION = 0b00000001
 };
 
+struct node;
+
+struct datatype
+{
+    int flags;
+
+    //i.e type of long, int, float etc...
+    int type;
+    //long int, int being the secondary type
+    struct datatype* secondary;
+
+    // type as string like "long"
+    const char*type_str;
+
+    size_t size;
+    // int*** a -> pointer_depth = 3,
+    // int* a -> pointer_depth = 1
+    int pointer_depth;
+
+    union
+    {
+        struct node* struct_node;
+        struct node* union_node;
+    };
+
+
+};
+
 struct node
 {
     int type;
@@ -271,6 +299,12 @@ struct node
             struct node* right;
             const char* op;
         } exp;
+        struct var
+        {
+            const char* name;
+            struct node* val;
+            struct datatype type;
+        } var;
     };
     
 
@@ -315,31 +349,7 @@ enum
     DATA_TYPE_UNKNOWN
 };
 
-struct datatype
-{
-    int flags;
 
-    //i.e type of long, int, float etc...
-    int type;
-    //long int, int being the secondary type
-    struct datatype* secondary;
-
-    // type as string like "long"
-    const char*type_str;
-
-    size_t size;
-    // int*** a -> pointer_depth = 3,
-    // int* a -> pointer_depth = 1
-    int pointer_depth;
-
-    union 
-    {
-        struct node* struct_node;
-        struct node* union_node;
-    };
-    
-
-};
 
 enum
 {

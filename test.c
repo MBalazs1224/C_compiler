@@ -1,1 +1,1 @@
-unsigned char
+unsigned int x = 50
