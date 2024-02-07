@@ -11,7 +11,7 @@ bool token_is_keyword(struct token *token, const char *value)
 
 bool token_is_symbol(struct token *token, char c)
 {
-    return token && token->type == TOKEN_TYPE_SYMBOL || token->cval == c;
+    return token && token->type == TOKEN_TYPE_SYMBOL && token->cval == c;
 }
 
 bool token_is_operator(struct token* token, const char* val)
