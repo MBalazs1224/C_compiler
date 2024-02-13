@@ -43,8 +43,12 @@ static struct token *token_next()
 {
     struct token *next_token = vector_peek_no_increment(current_process->token_vec);
     parser_ignore_nl_or_comment(next_token);
-    current_process->pos = next_token->pos;
-    parser_last_token = next_token;
+    if(next_token)
+    {
+        current_process->pos = next_token->pos;
+        parser_last_token = next_token;
+    }
+
     return vector_peek(current_process->token_vec);
 }
 static struct token *token_peek_next();
@@ -543,7 +547,7 @@ void parse_variable(struct datatype* dtype, struct token* name_token, struct his
     if (token_next_is_operator("="))
     {
         //Ignore the = operator
-        token_next();
+        struct token* val  = token_next();
         parse_expressionable_root(history);
         value_node = node_pop();
     }
