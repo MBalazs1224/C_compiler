@@ -336,6 +336,22 @@ struct node
             // int x[50] -> [50] would be bracket node, inner would be NODE_TYPE_NUMBER with the value of 50
             struct node* inner;
         }bracket ;
+
+        struct _struct
+        {
+            const char* name;
+            struct node* body_n;
+
+            /**
+             * struct abc
+             * {
+             *
+             * } VAR_NAME;
+             *
+             * NULL if VAR_NAME not provided
+             */
+            struct node* var;
+        }_struct;
     };
     
 
@@ -459,6 +475,23 @@ size_t array_brackets_calculate_size(struct datatype* dtype, struct array_bracke
 
 int array_total_indexes(struct datatype* dtype);
 
+bool datatype_is_struct_or_union(struct datatype* dtype);
+
+
+struct scope* scope_new(struct compiler_process* process, int flags);
+struct scope* scope_create_root(struct compiler_process* process);
+void scope_free_root(struct compiler_process* process);
+void scope_iteraton_start(struct scope* scope);
+void scope_iteration_end(struct scope* scope);
+void* scope_iterate_back(struct scope* scope);
+void* scope_last_entity_at_scope(struct scope* scope);
+//Looks for an entity until it finds it or reaches strop_scope
+void* scope_last_entity_from_scope_stop_at(struct scope* scope, struct scope* stop_scope);
+void* scope_last_entity_stop_at(struct compiler_process* process, struct scope* stop_scope);
+void* scope_last_entity(struct compiler_process* process);
+void scope_push(struct compiler_process* process, void* ptr, size_t elem_size);
+void scope_finish(struct compiler_process* process);
+struct scope* scope_current(struct compiler_process* process);
 
 #define TOTAL_OPERATOR_GROUPS 14
 #define MAX_OPERATORS_IN_GROUP 12
