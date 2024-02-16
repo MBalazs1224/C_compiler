@@ -496,6 +496,16 @@ int array_total_indexes(struct datatype* dtype);
 bool datatype_is_struct_or_union(struct datatype* dtype);
 
 
+size_t datatype_element_size(struct datatype* dtype);
+
+
+size_t datatype_size_no_ptr(struct datatype* dtype);
+
+size_t datatype_size(struct datatype* dtype);
+
+size_t datatype_size_for_array_access(struct datatype* dtype);
+
+
 struct scope* scope_new(struct compiler_process* process, int flags);
 struct scope* scope_create_root(struct compiler_process* process);
 void scope_free_root(struct compiler_process* process);
