@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include "helpers/vector.h"
 #include "compiler.h"
-int main(){
-
+int main()
+{
     int res = compile_file("./test.c","test1.c",0);
 
     if (res == COMPILER_FILE_COMPILED_OK)

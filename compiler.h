@@ -324,6 +324,7 @@ struct node
             const char* name;
             struct node* val;
             struct datatype type;
+            int padding;
         } var;
         struct varlist
         {
@@ -499,6 +500,14 @@ bool datatype_is_struct_or_union(struct datatype* dtype);
 size_t variable_size(struct node* var_node);
 // Sums all the variable size of all variable nodes inside the variable list node, returns the sum
 size_t variable_size_for_list(struct node*var_list_node);
+
+int padding(int val, int to);
+
+int align_value(int val, int to);
+// For negative needed bytes (used mainly at stack)
+int align_value_treat_positive(int val, int to);
+
+int compute_sum_padding(struct vector*vec);
 
 size_t datatype_element_size(struct datatype* dtype);
 
