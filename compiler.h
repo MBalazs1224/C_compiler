@@ -495,6 +495,10 @@ int array_total_indexes(struct datatype* dtype);
 
 bool datatype_is_struct_or_union(struct datatype* dtype);
 
+// Gets the variable size from the given variable node
+size_t variable_size(struct node* var_node);
+// Sums all the variable size of all variable nodes inside the variable list node, returns the sum
+size_t variable_size_for_list(struct node*var_list_node);
 
 size_t datatype_element_size(struct datatype* dtype);
 
