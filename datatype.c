@@ -57,3 +57,8 @@ size_t datatype_size_for_array_access(struct datatype* dtype)
     return datatype_size(dtype);
 
 }
+
+bool datatype_is_primitive(struct datatype* dtype)
+{
+    return !datatype_is_struct_or_union(dtype);
+}

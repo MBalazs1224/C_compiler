@@ -325,6 +325,8 @@ struct node
             struct node* val;
             struct datatype type;
             int padding;
+            //Aligned offset
+            int aoffset;
         } var;
         struct varlist
         {
@@ -466,7 +468,7 @@ bool token_is_symbol(struct token* token, char c);
 bool token_is_primitive_keyword(struct token *token);
 bool datatype_is_struct_or_union_for_name(const char* name);
 bool token_is_operator(struct token* token, const char* val);
-
+bool datatype_is_primitive(struct datatype* dtype);
 struct node* node_create(struct node* _node);
 void make_exp_node(struct node* left_node, struct node* right_node, const char* op);
 void make_bracket_node(struct node* node);
@@ -520,7 +522,9 @@ size_t datatype_size(struct datatype* dtype);
 
 size_t datatype_size_for_array_access(struct datatype* dtype);
 
+struct node* variable_node(struct node* node);
 
+bool variable_node_is_primitive(struct node* node);
 struct scope* scope_new(struct compiler_process* process, int flags);
 struct scope* scope_create_root(struct compiler_process* process);
 void scope_free_root(struct compiler_process* process);
