@@ -46,7 +46,8 @@ struct parser_scope_entity* parser_scope_last_entity_stop_global_scope()
 enum
 {
     HISTORY_FLAG_INSIDE_UNION= 0b00000001,
-    HISTORY_FLAG_IS_UPWARD_STACK= 0b00000010
+    HISTORY_FLAG_IS_UPWARD_STACK= 0b00000010,
+    HISTORY_FLAG_IS_GLOBAL_SCOPE = 0b00000100
 };
 
 struct history
@@ -71,7 +72,6 @@ struct history* history_down(struct history* history, int flags)
 }
 int parse_expressionable_single(struct history* history);
 void parse_expressionable(struct history* history);
-
 
 void parser_scope_new()
 {
@@ -607,9 +607,19 @@ void parser_scope_offset_for_stack(struct node* node, struct history* history)
         }
     }
 }
+//Global variables are not on the stack so they don't have offsets they only have an adress in the memory
+int parser_scope_offset_for_global(struct node* node, struct history*)
+{
+    return 0;
+}
 
 void parser_scope_offset(struct node* node, struct history* history)
 {
+    if (history->flags & HISTORY_FLAG_IS_GLOBAL_SCOPE)
+    {
+        parser_scope_offset_for_global(node,history);
+        return;
+    }
     parser_scope_offset_for_stack(node,history);
 }
 
