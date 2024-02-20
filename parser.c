@@ -961,15 +961,16 @@ void parse_body_multiple_statements(size_t* variable_size, struct vector* body_v
             {
                 largest_possible_var_node = stmt_node;
             }
-        }
-
-        if (variable_node_is_primitive(stmt_node))
-        {
-            if (!largest_align_eligible_var_node || (largest_align_eligible_var_node->var.type.size <= stmt_node->var.type.size))
+            if (variable_node_is_primitive(stmt_node))
             {
-                largest_align_eligible_var_node = stmt_node;
+                if (!largest_align_eligible_var_node || (largest_align_eligible_var_node->var.type.size <= stmt_node->var.type.size))
+                {
+                    largest_align_eligible_var_node = stmt_node;
+                }
             }
         }
+
+
         // Push the statement node to the body vector
         vector_push(body_vec,&stmt_node);
 
@@ -1232,6 +1233,7 @@ int parse_expressionable_single(struct history* history)
         break;
     case TOKEN_TYPE_IDENTIFIER:
         parse_identifier(history);
+        res = 0;
     case TOKEN_TYPE_OPERATOR:
         parse_exp(history);
         res = 0;
