@@ -25,6 +25,9 @@ struct compiler_process *compiler_process_create(const char *filename, const cha
     process->flags = flags;
     process->cfile.fp = file;
     process->ofile = out_file;
+
+    symresolver_initialize(process);
+    symresolver_new_table(process);
     return process;
 
 }
