@@ -468,8 +468,9 @@ bool token_is_keyword(struct token *token, const char *value);
 bool token_is_nl_or_comment_or_newline_seperator(struct token* token);
 bool token_is_symbol(struct token* token, char c);
 bool token_is_primitive_keyword(struct token *token);
-bool datatype_is_struct_or_union_for_name(const char* name);
+bool token_is_identifier(struct token* token);
 bool token_is_operator(struct token* token, const char* val);
+bool datatype_is_struct_or_union_for_name(const char* name);
 bool datatype_is_primitive(struct datatype* dtype);
 struct node* node_create(struct node* _node);
 

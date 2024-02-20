@@ -112,9 +112,8 @@ static struct token *token_next()
     if(next_token)
     {
         current_process->pos = next_token->pos;
-        parser_last_token = next_token;
     }
-
+    parser_last_token = next_token;
     return vector_peek(current_process->token_vec);
 }
 static struct token *token_peek_next();
@@ -979,7 +978,7 @@ void parse_struct_no_new_scope(struct datatype* dtype, bool is_forward_declarati
     }
     dtype->struct_node = struct_node;
     // struct dog {} abc; -> is a variabe so we have to process the variable name
-    if (token_peek_next()->type == TOKEN_TYPE_IDENTIFIER)
+    if (token_is_identifier(token_peek_next()))
     {
         struct token* var_name = token_peek_next();
         struct_node->flags |= NODE_FLAG_HAS_VARIABLE_COMBINED;

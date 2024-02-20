@@ -48,6 +48,6 @@ clean:
 	del /Q main.exe
 	del /Q build\*.o
 	del /Q build\helpers\*.o
-	#rm ./main
-	#rm -rf ${OBJECTS}
+#rm ./main
+#rm -rf ${OBJECTS}
 
