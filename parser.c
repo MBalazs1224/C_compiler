@@ -750,6 +750,8 @@ void parse_function_body(struct history* history)
 {
     parse_body(NULL, history_down(history,history->flags | HISTORY_FLAG_INSIDE_FUNCTION_BODY));
 }
+struct vector* parse_function_arguments(struct history*history);
+
 
 void parse_function(struct datatype* ret_type, struct token* name_Token, struct history* history)
 {
@@ -766,7 +768,7 @@ void parse_function(struct datatype* ret_type, struct token* name_Token, struct 
         function_node->func.args.stack_addition += DATA_SIZE_DWORD;
     }
     expect_op("(");
-#warning "Parse function arguments"
+    arguments_vector = parse_function_arguments(history_begin(0));
     expect_sym(')');
 
     function_node->func.args.vector = arguments_vector;
@@ -1075,6 +1077,55 @@ void parse_struct_or_union(struct datatype* dtype)
         default:
             compiler_error(current_process,"COMPILER BUG: The provided datatype is not a structure or union\n");
     }
+}
+
+void token_read_dots(int i)
+{
+    for (int j = 0; j < i; ++j) {
+        expect_op(".");
+    }
+}
+void parse_variable_full(struct history* history)
+{
+    struct datatype dtype;
+    parse_datatype(&dtype);
+    struct token* name_token = NULL;
+    if (token_peek_next()->type == TOKEN_TYPE_IDENTIFIER)
+    {
+        name_token = token_next();
+    }
+    parse_variable(&dtype,name_token,history);
+}
+struct vector* parse_function_arguments(struct history*history)
+{
+    parser_scope_new();
+    struct vector* arguments_vec = vector_create(sizeof(struct node*));
+    while (!token_next_is_symbol(')'))
+    {
+        // You can have ... at the end of any function arguments meaning it has va (variable_arguments, like printf)
+        // You can have more arguments after va
+        if (token_next_is_operator("."))
+        {
+            token_read_dots(3);
+            parser_scope_finish();
+            return arguments_vec;
+        }
+        // All arguments in a function has upward stack (meaning their memory address is "above" the function's)
+        // When accessing function arguments we go "up" the stack, when we accessing local variables, we go "down" the stack
+        parse_variable_full(history_down(history,history->flags | HISTORY_FLAG_IS_UPWARD_STACK));
+        struct node* argument_node = node_pop();
+        vector_push(arguments_vec,&argument_node);
+
+        // Function arguments are seperated by ',', so if there is none then that means that there are no more function arguments
+        if (!token_next_is_operator(","))
+        {
+            break;
+        }
+        // Pop off the ','
+        token_next();
+    }
+    parser_scope_finish();
+    return arguments_vec;
 }
 
 void parse_variable_function_or_struct_union(struct history*history)
