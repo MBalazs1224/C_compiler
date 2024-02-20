@@ -321,6 +321,13 @@ struct  node
             struct node* right;
             const char* op;
         } exp;
+
+        struct parenthesis
+        {
+            // The expression inside the parenthesis node
+            struct node* exp;
+        } parenthesis;
+
         struct var
         {
             const char* name;
@@ -510,9 +517,13 @@ struct node* node_from_sym(struct symbol* sym);
 struct node* node_from_symbol(struct compiler_process* current_process, const char* name);
 
 struct node* struct_node_for_name(struct compiler_process* current_process,const char* name);
+bool node_is_expression_or_parentheses(struct node* node);
+
+bool node_is_value_type(struct node* node);
 
 
 void make_exp_node(struct node* left_node, struct node* right_node, const char* op);
+void make_exp_parentheses_node(struct node* exp_node);
 void make_bracket_node(struct node* node);
 void make_body_node(struct vector* body_vec,size_t size, bool padded, struct node* largest_var_node);
 void make_struct_node(const char* name, struct node* body_node);
