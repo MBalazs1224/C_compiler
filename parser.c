@@ -279,7 +279,7 @@ void parser_reorder_expression(struct node** node_out)
 void parse_exp_normal(struct history* history)
 {
     struct token* op_token = token_peek_next();
-    char* op = op_token->sval;
+    const char* op = op_token->sval;
     struct node* node_left = node_peek_expressionable_or_null();
     if (!node_left)
     {
@@ -670,7 +670,6 @@ void make_variable_node_and_register(struct history* history, struct datatype* d
 {
     make_variable_node(dtype,token_name,value_node);
     struct node* var_node = node_pop();
-#warning "Remember to calculate scope offsets and push to scope";
     // Calculate the scope offfset
     // Push variable node to scope
     parser_scope_offset(var_node,history);
