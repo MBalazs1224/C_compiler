@@ -617,12 +617,18 @@ void parser_scope_offset_for_stack(struct node* node, struct history* history)
     int offset = -variable_size(node);
     if (upward_stack)
     {
-#warning "Handle upward stack"
-        compiler_error(current_process,"Upward stacks are not yet implemented\n");
+        size_t stack_addition = function_node_argument_stack_addition(parser_current_function);
+        offset = stack_addition;
+        // If there is no last_entity, than that means that the stack_addition points to the first argument in memory, if there is a last_entity than we are further "up" the stack than we need to be and than the size of that variable to the basic stack_addition (the addition will be done in the later if check)
+        if (last_entity)
+        {
+            offset = datatype_size(&variable_node(last_entity->node)->var.type);
+        }
     }
 
     if (last_entity)
     {
+        // It adds here
         offset += variable_node(last_entity->node)->var.aoffset;
         if (variable_node_is_primitive(node))
         {

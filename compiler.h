@@ -586,6 +586,7 @@ void scope_finish(struct compiler_process* process);
 void symresolver_build_for_node(struct compiler_process* process, struct node* node);
 struct symbol* symresolver_get_symbol(struct compiler_process* process, const char* name);
 struct symbol* symresolver_get_symbol_for_native_function(struct compiler_process* process, const char* name);
+size_t function_node_argument_stack_addition(struct node* node);
 struct scope* scope_current(struct compiler_process* process);
 
 void symresolver_initialize(struct compiler_process* process);
