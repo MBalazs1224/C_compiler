@@ -29,10 +29,10 @@ struct parser_scope_entity
 };
 
 
-struct parser_scope_entity* parser_new_scope_enitty(struct node* node, int stack_offset, int flags)
+struct parser_scope_entity* parser_new_scope_entity(struct node* node, int stack_offset, int flags)
 {
     struct parser_scope_entity* entity = calloc(1,sizeof(struct parser_scope_entity));
-    entity->node;
+    entity->node = node;
     entity->flags = flags;
     entity ->stack_offset = stack_offset;
     return entity;
@@ -676,7 +676,7 @@ void make_variable_node_and_register(struct history* history, struct datatype* d
     // Push variable node to scope
     parser_scope_offset(var_node,history);
 
-    parser_scope_push(parser_new_scope_enitty(var_node,var_node->var.aoffset,0),var_node->var.type.size);
+    parser_scope_push(parser_new_scope_entity(var_node, var_node->var.aoffset, 0), var_node->var.type.size);
     node_push(var_node);
 
 }
@@ -968,7 +968,7 @@ void parse_struct_no_new_scope(struct datatype* dtype, bool is_forward_declarati
     size_t body_variable_size = 0;
     if (!is_forward_declaration)
     {
-        parse_body(&body_variable_size, history_begin(HISTORY_FLAG_INSIDE_UNION));
+        parse_body(&body_variable_size, history_begin(HISTORY_FLAG_INSIDE_STRUCTURE));
         body_node = node_pop();
     }
     make_struct_node(dtype->type_str,body_node);
