@@ -299,7 +299,7 @@ struct datatype
 
 };
 
-struct node
+struct  node
 {
     int type;
     int flags;
@@ -374,6 +374,30 @@ struct node
             struct node* largest_var_node;
 
         } body;
+
+        struct function
+        {
+            // Special flags
+            int flags;
+            // Return type i.e. void, int etc..
+            struct datatype rtype;
+
+            const char* name;
+            struct function_arguments
+            {
+                // Vector of struct node*. Must be NODE_TYPE_VARIABLE
+                struct vector* vector;
+
+                // How much to add to the EBP to find the first argument;
+                size_t stack_addition;
+            } args;
+
+            // Pointer to the function body node, NULL if this is a function prototype
+            struct node* body_n;
+
+            // Stack size for all variables inside this functions
+            size_t stack_size;
+        } func;
     };
     
 
@@ -434,6 +458,13 @@ enum
     DATA_SIZE_WORD = 2,
     DATA_SIZE_DWORD = 4,
     DATA_SIZE_DDWORD = 8,
+};
+
+enum
+{
+    // The flag is set for native functions
+    FUNCTION_NODE_FLAG_IS_NATIVE = 0b00000001
+
 };
 
 
