@@ -8,10 +8,10 @@ static struct token *parser_last_token;
 
 // extern means that the variable is elsewhere but we can reference it from here
 extern struct node* parser_current_body;
+extern struct node* parser_current_function;
 extern struct expressionable_op_precedence_group op_precedence[TOTAL_OPERATOR_GROUPS];
 
-enum
-{
+enum {
     PARSER_SCOPE_ENTITY_ON_STACK = 0b00000001,
     PARSER_SCOPE_ENTITY_STRUCTURE_SCOPE = 0b00000010
 };
@@ -48,7 +48,8 @@ enum
     HISTORY_FLAG_INSIDE_UNION= 0b00000001,
     HISTORY_FLAG_IS_UPWARD_STACK= 0b00000010,
     HISTORY_FLAG_IS_GLOBAL_SCOPE = 0b00000100,
-    HISTORY_FLAG_INSIDE_STRUCTURE = 0b00001000
+    HISTORY_FLAG_INSIDE_STRUCTURE = 0b00001000,
+    HISTORY_FLAG_INSIDE_FUNCTION_BODY = 0b00010000
 };
 
 struct history
@@ -744,6 +745,55 @@ void parse_variable(struct datatype* dtype, struct token* name_token, struct his
 
 void parse_keyword(struct history*history);
 void parse_body(size_t* variable_size, struct history*history);
+
+void parse_function_body(struct history* history)
+{
+    parse_body(NULL, history_down(history,history->flags | HISTORY_FLAG_INSIDE_FUNCTION_BODY));
+}
+
+void parse_function(struct datatype* ret_type, struct token* name_Token, struct history* history)
+{
+    struct vector* arguments_vector = NULL;
+    parser_scope_new();
+
+    make_function_node(ret_type,name_Token->sval,NULL,NULL);
+    struct node* function_node = node_peek();
+    parser_current_function = function_node;
+    // Returning a struct in assembly is hard (return arguments are set in the EAX reg. but that's impossible here because of unlimited datasize) so a "pointer" is returned instead
+    // In assembly, before calling the function, enough space for the return type will be created on the stack and the called function will modify those adresses
+    if (datatype_is_struct_or_union(ret_type))
+    {
+        function_node->func.args.stack_addition += DATA_SIZE_DWORD;
+    }
+    expect_op("(");
+#warning "Parse function arguments"
+    expect_sym(')');
+
+    function_node->func.args.vector = arguments_vector;
+    if (symresolver_get_symbol_for_native_function(current_process,name_Token->sval))
+    {
+        function_node->func.flags |= FUNCTION_NODE_FLAG_IS_NATIVE;
+    }
+    if (token_next_is_symbol('{'))
+    {
+        parse_function_body(history_begin(0));
+        struct node* body_node = node_pop();
+        function_node->func.body_n = body_node;
+
+        // We don't need to check for '}' because parse_body inside parse_function_body will take care of that
+
+    }
+    else
+    {
+        //It must be a function prototype
+        expect_sym(';');
+    }
+
+    parser_current_function = NULL;
+    parser_scope_finish();
+
+}
+
 void parse_symbol()
 {
     if (token_next_is_symbol('{'))
@@ -1053,6 +1103,12 @@ void parse_variable_function_or_struct_union(struct history*history)
     }
     //int abc()
     //Check if this is a function declaration
+    // It has to be a function if it has parentheses
+    if (token_next_is_operator("("))
+    {
+        parse_function(&dtype,name_token,history);
+        return;
+    }
 
     parse_variable(&dtype,name_token,history);
 

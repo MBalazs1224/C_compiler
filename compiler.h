@@ -516,6 +516,7 @@ void make_exp_node(struct node* left_node, struct node* right_node, const char* 
 void make_bracket_node(struct node* node);
 void make_body_node(struct vector* body_vec,size_t size, bool padded, struct node* largest_var_node);
 void make_struct_node(const char* name, struct node* body_node);
+void make_function_node(struct datatype* ret_type,const char* name, struct vector* arguments, struct node* body_node);
 bool keyword_is_datatype(const char *str);
 
 struct node* node_pop();
@@ -584,6 +585,7 @@ void scope_push(struct compiler_process* process, void* ptr, size_t elem_size);
 void scope_finish(struct compiler_process* process);
 void symresolver_build_for_node(struct compiler_process* process, struct node* node);
 struct symbol* symresolver_get_symbol(struct compiler_process* process, const char* name);
+struct symbol* symresolver_get_symbol_for_native_function(struct compiler_process* process, const char* name);
 struct scope* scope_current(struct compiler_process* process);
 
 void symresolver_initialize(struct compiler_process* process);
