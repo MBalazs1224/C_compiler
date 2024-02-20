@@ -248,7 +248,9 @@ enum
 
 enum
 {
-    NODE_FLAG_INSIDE_EXPRESSION = 0b00000001
+    NODE_FLAG_INSIDE_EXPRESSION = 0b00000001,
+    NODE_FLAG_IS_FORWARD_DECLARATION = 0b00000010,
+    NODE_FLAG_HAS_VARIABLE_COMBINED = 0b00000100
 };
 
 struct node;
@@ -398,7 +400,7 @@ enum
     DATATYPE_FLAG_IS_RESTRICT = 0b01000000,
     DATATYPE_FLAG_IS_IGNORE_TYPE_CHECKING = 0b10000000,
     DATATYPE_FLAG_IS_SECONDARY = 0b100000000,
-    DATATYPE_FLAG_IS_UNION_NO_NAME = 0b1000000000,
+    DATATYPE_FLAG_STRUCT_UNION_NO_NAME = 0b1000000000,
     DATATYPE_FLAG_IS_LITERAL = 0b100000000000
 };
 
@@ -473,6 +475,7 @@ struct node* node_create(struct node* _node);
 void make_exp_node(struct node* left_node, struct node* right_node, const char* op);
 void make_bracket_node(struct node* node);
 void make_body_node(struct vector* body_vec,size_t size, bool padded, struct node* largest_var_node);
+void make_struct_node(const char* name, struct node* body_node);
 bool keyword_is_datatype(const char *str);
 
 struct node* node_pop();
@@ -539,6 +542,7 @@ void* scope_last_entity_stop_at(struct compiler_process* process, struct scope* 
 void* scope_last_entity(struct compiler_process* process);
 void scope_push(struct compiler_process* process, void* ptr, size_t elem_size);
 void scope_finish(struct compiler_process* process);
+void symresolver_build_for_node(struct compiler_process* process, struct node* node);
 struct scope* scope_current(struct compiler_process* process);
 
 #define TOTAL_OPERATOR_GROUPS 14
