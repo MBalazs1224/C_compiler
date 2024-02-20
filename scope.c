@@ -121,7 +121,7 @@ void* scope_last_entity(struct compiler_process* process)
 
 void scope_push(struct compiler_process* process, void* ptr, size_t elem_size)
 {
-    vector_push(process->scope.current,&ptr);
+    vector_push(process->scope.current->entities,&ptr);
     process->scope.current->size += elem_size;
 }
 
