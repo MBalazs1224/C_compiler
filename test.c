@@ -12,4 +12,6 @@ int main(int x)
     {
         int d = 4;
     }
+
+    return;
 }
