@@ -431,7 +431,7 @@ struct  node
             struct for_stmt
             {
                 /*
-                 * for(INIT_NODE;COND_NODE;BODY_NODE)
+                 * for(INIT_NODE;COND_NODE;LOOP_NODE)
                  * {
                  *   BODY_NODE
                  * }
@@ -442,6 +442,17 @@ struct  node
                 struct node* body_node;
             } for_stmt;
 
+            struct while_stmt
+            {
+                /*
+                 * while(EXP_NODE)
+                 * {
+                 *   BODY_NODE
+                 * }
+                 */
+                struct node* exp_node;
+                struct node* body_node;
+            } while_stmt;
         } stmt;
     };
     
@@ -570,7 +581,7 @@ void make_if_node(struct node*cond_node, struct node* body_node, struct node* ne
 void make_else_node(struct node* body_node);
 void make_return_node(struct node* exp_node);
 void make_for_node(struct node* init_node, struct node* cond_node, struct node* loop_node, struct node* body_node);
-
+void make_while_node(struct node* exp_node, struct node* body_node);
 bool keyword_is_datatype(const char *str);
 
 struct node* node_pop();
