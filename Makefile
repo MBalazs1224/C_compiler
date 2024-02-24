@@ -45,9 +45,9 @@ all: ${OBJECTS}
 ./build/helpers/vector.o: ./helpers/vector.c
 	gcc ./helpers/vector.c ${INCLUDES} -o ./build/helpers/vector.o -g -c
 clean:
-	del /Q main.exe
-	del /Q build\*.o
-	del /Q build\helpers\*.o
-#rm ./main
-#rm -rf ${OBJECTS}
+#del /Q main.exe
+#del /Q build\*.o
+#del /Q build\helpers\*.o
+	rm ./main
+	rm -rf ${OBJECTS}
 

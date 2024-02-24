@@ -446,7 +446,7 @@ struct token *token_make_special_number()
 {
     struct token *token = NULL;
     struct token *last_token = lexer_last_token();
-    if (!last_token || !(last_token->type != TOKEN_TYPE_NUMBER && last_token->llnum == 0))
+    if (!last_token || !(last_token->type == TOKEN_TYPE_NUMBER && last_token->llnum == 0))
     {
         return token_make_identifier_or_keyword();
     }
