@@ -909,6 +909,9 @@ void parse_function(struct datatype* ret_type, struct token* name_Token, struct 
 
 }
 
+void parse_label(struct history* history);
+
+
 void parse_symbol()
 {
     if (token_next_is_symbol('{'))
@@ -920,6 +923,13 @@ void parse_symbol()
 
         node_push(body_node);
     }
+    else if(token_next_is_symbol(':'))
+    {
+        parse_label(history_begin(0));
+        return;
+    }
+
+    compiler_error(current_process,"Invalid symbol");
 }
 
 
@@ -1498,6 +1508,20 @@ void parse_break(struct history* history)
     make_break_node();
 }
 
+void parse_label(struct history* history)
+{
+    // The label node is already in the stack at this point because it's an identifier
+    expect_sym(':');
+    struct node* label_name_node = node_pop();
+
+    // The name might contain illegal chars like numbers etc. that's why we have to check if it is an identifier
+    if (label_name_node->type != NODE_TYPE_IDENTIFIER)
+    {
+        compiler_error(current_process,"Expecting an identifier for labels");
+    }
+    make_label_node(label_name_node);
+}
+
 void parse_continue(struct history* history)
 {
     expect_keyword("continue");
@@ -1567,6 +1591,7 @@ int parse_expressionable_single(struct history* history)
     case TOKEN_TYPE_IDENTIFIER:
         parse_identifier(history);
         res = 0;
+        break;
     case TOKEN_TYPE_OPERATOR:
         parse_exp(history);
         res = 0;

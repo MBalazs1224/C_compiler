@@ -482,6 +482,13 @@ struct  node
                 bool has_default_case;
             } switch_stmt;
         } stmt;
+
+        struct node_label
+        {
+
+            // Will contain the identifier node
+            struct node* name;
+        } label;
     };
     
 
@@ -614,6 +621,7 @@ void make_do_while_node(struct node* body_node, struct node* exp_node);
 void make_switch_node(struct node* exp_node, struct node* body_node, struct vector* cases, bool has_default_case);
 void make_continue_node();
 void make_break_node();
+void make_label_node(struct node* name_node);
 
 bool keyword_is_datatype(const char *str);
 
