@@ -1076,7 +1076,7 @@ void parser_append_size_for_node_struct_union(struct history* history,size_t* _v
         return;
     }
 
-    struct node* largest_var_node = variable_struct_or_union_body_node(node->body.largest_var_node);
+    struct node* largest_var_node = variable_struct_or_union_body_node(node)->body.largest_var_node;
     if (largest_var_node)
     {
         *_variable_size += align_value(*_variable_size,largest_var_node->var.type.size);
@@ -1368,6 +1368,12 @@ struct vector* parse_function_arguments(struct history*history)
     return arguments_vec;
 }
 
+void parse_forward_declaration(struct datatype* dtype)
+{
+    // Since this is a forward declataration, parse the struct
+    parse_struct(dtype);
+}
+
 void parse_variable_function_or_struct_union(struct history*history)
 {
     struct datatype dtype;
@@ -1382,6 +1388,13 @@ void parse_variable_function_or_struct_union(struct history*history)
         node_push(su_node);
         return;
     }
+
+    if (token_next_is_symbol(';'))
+    {
+        parse_forward_declaration(&dtype);
+        return;
+    }
+
     // Ignore integer abbreviations if necessary i.e. "long int" becomes just "long"
     parser_ignore_int(&dtype);
 
