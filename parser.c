@@ -371,10 +371,18 @@ void parser_deal_with_additional_expression()
         parse_expressionable(history_begin(0));
     }
 }
+void parse_for_cast();
 
 void parse_for_parentheses(struct history* history)
 {
     expect_op("(");
+
+    //If the next token is a keyword than it is a cast
+    if (token_peek_next()->type == TOKEN_TYPE_KEYWORD)
+    {
+        parse_for_cast();
+        return;
+    }
     struct node* left_node = NULL;
     struct node* tmp_node = node_peek_or_null();
 
@@ -439,6 +447,24 @@ void parse_for_array(struct history* history)
         make_exp_node(left_node,bracket_node,"[]");
     }
 
+}
+
+void parse_datatype(struct datatype* dtype);
+
+void parse_for_cast()
+{
+    // (DATATYPE) -> at this point '(' is already parsed i.e (char) is seen as char)
+    struct datatype dtype = {};
+    parse_datatype(&dtype);
+
+    // Only ')' is left
+    expect_sym(')');
+
+    // After a cast there should be an expression
+    parse_expressionable(history_begin(0));
+
+    struct node* operand_node = node_pop();
+    make_cast_node(&dtype,operand_node);
 }
 
 int parse_exp(struct history* history)

@@ -505,6 +505,16 @@ struct  node
             // Will contain the identifier node
             struct node* name;
         } label;
+
+        //(int) 56
+        struct cast
+        {
+            // Will be int
+            struct datatype dtype;
+
+            //Will point to the 56
+            struct node* operand;
+        } cast;
     };
     
 
@@ -641,6 +651,7 @@ void make_label_node(struct node* name_node);
 void make_goto_node(struct node* label_node);
 void make_case_node(struct node* exp_node);
 void make_tenary_node(struct node*true_node, struct node* false_node);
+void make_cast_node(struct datatype* dtype, struct node* operand_node);
 
 bool keyword_is_datatype(const char *str);
 
