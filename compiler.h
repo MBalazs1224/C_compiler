@@ -745,4 +745,72 @@ struct expressionable_op_precedence_group
     char* operators[MAX_OPERATORS_IN_GROUP];
     int associativity;
 };
+
+
+#include "compiler.h"
+#include <stdlib.h>
+#include "helpers/vector.h"
+// Structs can be forward declared, so fixups are created to make sure that a struct is parsed at the end if it is forward declared
+
+struct fixup;
+
+//Function pointer to fix a fixup if needed, returns true if the fixup was successful
+typedef bool(*FIXUP_FIX)(struct fixup*);
+
+//Function pointer to end a fixup if , signifies that the fixup has been removed from memory
+typedef void(*FIXUP_END)(struct fixup*);
+
+
+struct fixup_config
+{
+    FIXUP_FIX fix;
+    FIXUP_END end;
+    void* private;
+};
+
+struct fixup_system
+{
+    // A vector if fixups
+    struct vector* fixups;
+};
+
+enum
+{
+    FIXUP_FLAG_RESOLVED = 0b00000001
+};
+
+struct fixup
+{
+    int flags;
+    struct fixup_system*system;
+    struct fixup_config config;
+};
+
+
+struct fixup_system* fixup_sys_new();
+
+struct fixup_config* fixup_config(struct fixup* fixup);
+//Should clear the fixup from memory, using the end function pointer
+void fixup_free(struct fixup* fixup);
+
+void fixup_start_iteration(struct fixup_system* system);
+
+struct fixup* fixup_next(struct fixup_system* system);
+
+//Frees all fixups from memory;
+void fixup_sys_fixups_free(struct fixup_system* system);
+
+void fixup_sys_free(struct fixup_system* system);
+
+int fixup_unresolved_fixups_count(struct fixup_system* system);
+
+struct fixup* fixup_register(struct fixup_system*system, struct fixup_config* config);
+
+bool fixup_resolve(struct fixup* fixup);
+
+void* fixup_private(struct fixup*fixup);
+bool fixups_resolve(struct fixup_system* system);
+
+
+
 #endif
