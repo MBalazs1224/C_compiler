@@ -5,5 +5,10 @@ int main(int x)
         continue;
         goto abc;
     }
+
+    switch (x) {
+        case 1:
+            break;
+    }
     abc:
 }
