@@ -1264,7 +1264,14 @@ void parse_body(size_t* variable_size, struct history*history)
     // We have multiple statements between the burly braces {int a; int b; int c;}
     parse_body_multiple_statements(variable_size,body_vec,history);
     parser_scope_finish();
-#warning "Don't forget to adjust the function stack size!"
+    if (variable_size)
+    {
+        // We need to change the stack size inside function bodys
+        if (history->flags & HISTORY_FLAG_INSIDE_FUNCTION_BODY)
+        {
+            parser_current_function->func.stack_size += *variable_size;
+        }
+    }
 }
 
 void parse_struct_no_new_scope(struct datatype* dtype, bool is_forward_declaration)
