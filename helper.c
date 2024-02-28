@@ -96,6 +96,9 @@ struct node*variable_struct_or_union_body_node(struct node* node)
     }
 
     //return union body
-    #warning "Union nodes are not yet implemented!";
+    if (node->var.type.type == DATA_TYPE_UNION)
+    {
+        return node->var.type.union_node->_union.body_n;
+    }
     return NULL;
 }

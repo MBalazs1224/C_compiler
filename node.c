@@ -86,6 +86,16 @@ void make_struct_node(const char* name, struct node* body_node)
     node_create(&(struct node){.type = NODE_TYPE_STRUCT,._struct.body_n = body_node,._struct.name = name,.flags = flags});
 }
 
+void make_union_node(const char* name, struct node* body_node)
+{
+    int flags = 0;
+    if (!body_node)
+    {
+        flags |= NODE_FLAG_IS_FORWARD_DECLARATION;
+    }
+    node_create(&(struct node){.type = NODE_TYPE_UNION,._union.body_n = body_node,._union.name = name,.flags = flags});
+}
+
 void make_function_node(struct datatype* ret_type,const char* name, struct vector* arguments, struct node* body_node)
 {
     node_create(&(struct node){.type = NODE_TYPE_FUNCTION,.func.name = name,.func.args.vector = arguments,.func.body_n = body_node, .func.rtype = *ret_type,.func.args.stack_addition = DATA_SIZE_DDWORD});
@@ -179,6 +189,21 @@ struct node* node_from_symbol(struct compiler_process* current_process, const ch
     }
     return node_from_sym(sym);
 }
+struct node* union_node_for_name(struct compiler_process* current_process,const char* name)
+{
+    struct node* node = node_from_symbol(current_process,name);
+    if (!node)
+    {
+        return NULL;
+    }
+    if (node->type != NODE_TYPE_UNION)
+    {
+        return NULL;
+    }
+
+    return node;
+}
+
 
 struct node* struct_node_for_name(struct compiler_process* current_process,const char* name)
 {
@@ -226,8 +251,7 @@ struct node* variable_node(struct node* node)
             var_node = node->_struct.var;
             break;
         case NODE_TYPE_UNION:
-            //var_node = node->_union.var;
-#warning "Union type variable nodes are not implemented yet"
+            var_node = node->_union.var;
             break;
     }
     return var_node;
