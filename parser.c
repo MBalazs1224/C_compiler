@@ -1508,6 +1508,16 @@ void parse_break(struct history* history)
     make_break_node();
 }
 
+void parse_goto(struct history* history)
+{
+    expect_keyword("goto");
+    parse_identifier(history_begin(0));
+    expect_sym(';');
+    // goto abc; -> abc will be a label node on top of the stack
+    struct node* label_node = node_pop();
+    make_goto_node(label_node);
+}
+
 void parse_label(struct history* history)
 {
     // The label node is already in the stack at this point because it's an identifier
@@ -1535,40 +1545,56 @@ void parse_keyword(struct history*history)
     if(is_keyword_variable_modifier(token->sval) || keyword_is_datatype(token->sval))
     {
         parse_variable_function_or_struct_union(history);
+        return;
     }
 
     if (S_EQ(token->sval,"return"))
     {
         parse_return(history);
+        return;
     }
     else if (S_EQ(token->sval,"if"))
     {
         parse_if_stmt(history);
+        return;
     }
     else if (S_EQ(token->sval,"for"))
     {
         parse_for_stmt(history);
+        return;
     }
     else if (S_EQ(token->sval,"while"))
     {
         parse_while_stmt(history);
+        return;
     }
     else if (S_EQ(token->sval,"do"))
     {
         parse_do_while(history);
+        return;
     }
     else if (S_EQ(token->sval,"switch"))
     {
         parse_switch(history);
+        return;
     }
     else if(S_EQ(token->sval,"break"))
     {
         parse_break(history);
+        return;
     }
     else if(S_EQ(token->sval,"continue"))
     {
         parse_continue(history);
+        return;
     }
+    else if(S_EQ(token->sval,"goto"))
+    {
+        parse_goto(history);
+        return;
+    }
+
+    compiler_error(current_process,"Invalid keyword\n");
 }
 
 
