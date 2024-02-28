@@ -404,6 +404,19 @@ void parse_for_parentheses(struct history* history)
 }
 void parse_for_tenary(struct history* history);
 
+void parse_for_comma(struct history* history)
+{
+    // Skip ','
+    token_next();
+    // 50,30 -> 50 is already parsed at this point so we pop it off
+    struct node* left_node = node_pop();
+    // parse the right expression (the expression after the ',')
+    parse_expressionable_root(history);
+    struct node* node_right = node_pop();
+
+    make_exp_node(left_node,node_right,",");
+}
+
 int parse_exp(struct history* history)
 {
     if (S_EQ(token_peek_next()->sval,"("))
@@ -413,6 +426,10 @@ int parse_exp(struct history* history)
     else if(S_EQ(token_peek_next()->sval,"?"))
     {
         parse_for_tenary(history);
+    }
+    else if(S_EQ(token_peek_next()->sval,","))
+    {
+        parse_for_comma(history);
     }
     else
     {
