@@ -299,6 +299,25 @@ void parser_node_shift_children_left(struct node* node)
     node->exp.op = right_op;
 
 }
+void parser_node_move_right_left_to_left(struct node* node)
+{
+    /*
+     *          exp                                     exp
+     *    left      right               ->      left            left2
+     *         left2      right2
+     *
+     * It moves the 2nd left up a layer and to the right
+     */
+    make_exp_node(node->exp.left, node->exp.right->exp.left,node->exp.op);
+    struct node* completed_node = node_pop();
+
+    // We still need to deal with the right node
+    const char* new_op = node->exp.right->exp.op;
+    node->exp.left = completed_node;
+    node->exp.right = node->exp.right->exp.right;
+    node->exp.op = new_op;
+}
+
 void parser_reorder_expression(struct node** node_out)
 {
     struct node* node = *node_out;
@@ -332,6 +351,16 @@ void parser_reorder_expression(struct node** node_out)
             parser_reorder_expression(&node->exp.left);
             parser_reorder_expression(&node->exp.right);
         }
+    }
+
+    /*
+     * return func(books[0].name,1000)
+     * books[0].name,1000 would be interpreted as books[0].(name,1000) so we need to reorder the nodes
+     */
+
+    if ((is_array_node(node->exp.left) || is_node_assignment(node->exp.right)) || node_is_expression(node->exp.left,"()") && node_is_expression(node->exp.right,","))
+    {
+        parser_node_move_right_left_to_left(node);
     }
 
 }

@@ -683,6 +683,11 @@ bool node_is_struct_or_union_variable(struct node* node);
 struct node*variable_struct_or_union_body_node(struct node* node);
 struct node* variable_node_or_list(struct node* node);
 
+bool node_is_expression(struct node* node,const char* op);
+
+bool is_array_node(struct node* node);
+bool is_node_assignment(struct node* node);
+
 struct array_brackets* array_brackets_new();
 
 void array_brackets_free(struct array_brackets* brackets);

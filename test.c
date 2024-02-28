@@ -1,8 +1,15 @@
-union dog
+struct book
 {
-    int x;
-} u;
-int main(int x)
+    char name[30];
+};
+
+int test(char* fmt)
 {
-    x = (int)30;
+    return 1;
+}
+struct book book;
+int main()
+{
+    struct book* books;
+    return test(56,books[0].name,1000);
 }
