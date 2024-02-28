@@ -151,6 +151,11 @@ void make_case_node(struct node* exp_node)
     node_create(&(struct node){.type = NODE_TYPE_STATEMENT_CASE,.stmt._case.exp = exp_node});
 }
 
+void make_tenary_node(struct node*true_node, struct node* false_node)
+{
+    node_create(&(struct node){.type = NODE_TYPE_TENARY,.tenary.true_node = true_node,.tenary.false_node = false_node});
+}
+
 struct node* node_from_sym(struct symbol* sym)
 {
     if (sym->type != SYMBOL_TYPE_NODE)
