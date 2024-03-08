@@ -212,6 +212,12 @@ enum
 
 enum
 {
+    CODEGEN_ALL_OK,
+    CODEGEN_GENERAL_ERROR
+};
+
+enum
+{
     NODE_TYPE_EXPRESSION,
     NODE_TYPE_EXPRESSION_PARENTHESIS,
     NODE_TYPE_NUMBER,
@@ -620,7 +626,7 @@ struct vector *lex_process_tokens(struct lex_process *process);
 
 int lex(struct lex_process *process);
 int parse(struct compiler_process* process);
-
+int codegen(struct compiler_process* process);
 
 void compiler_error(struct compiler_process *compiler, const char *msg, ...);
 
