@@ -1968,6 +1968,6 @@ int parse(struct compiler_process *process)
 
     // Resolves all fixups and asserts that it returns true (meaning all of it could be resolved)
     assert(fixups_resolve(parser_fixup_sys));
-
+    scope_free_root(process);
     return PARSE_ALL_OK;
 }
