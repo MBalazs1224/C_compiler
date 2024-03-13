@@ -236,7 +236,9 @@ void codegen_generate_global_Variable_for_primitive(struct node* node)
         // Handle the value
         if (node->var.val->type == NODE_TYPE_STRING)
         {
-#warning "don't forget to handle string value"
+            const char* label = codegen_register_string(node->var.val->sval);
+            // IDENTIFIER: SIZE VALUE
+            asm_push("%s: %s %s",node->var.name, asm_keyword_for_size(variable_size(node),tmp_buff),label);
         } else
         {
             // IDENTIFIER: SIZE VALUE

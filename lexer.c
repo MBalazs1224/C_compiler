@@ -138,7 +138,7 @@ static struct token *token_make_string(char start_delim, char end_delim)
     struct buffer *buf = buffer_create();
     assert(nextc() == start_delim);
     char c = nextc();
-    for (; c += end_delim && c != EOF; c = nextc())
+    for (; c != end_delim && c != EOF; c = nextc())
     {
         if (c == '\\')
         {
