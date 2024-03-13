@@ -170,9 +170,31 @@ struct symbol
     void* data;
 };
 
+
+struct codegen_entry_point
+{
+    // ID of the entry point
+    int id;
+};
+
+struct codegen_exit_point
+{
+    // ID of the exit point
+    int id;
+};
+
+struct code_generator
+{
+    // vector of struct codegen_entry_point
+    struct vector* entry_points;
+    // vector of struct codegen_exit_point
+    struct vector* exit_points;
+
+};
+
 struct compiler_process
 {
-    // The flags in regards to how the file should be compiler
+    // The flags in regard to how the file should be compiler
     int flags;
     struct pos pos;
     struct compiler_process_input_file
@@ -202,6 +224,9 @@ struct compiler_process
         //All symbol tables. struct vector* so we can have multiple tables
         struct vector* tables;
     } symbols;
+
+    // Pointer to our code generator
+    struct code_generator* generator;
 };
 
 enum
@@ -538,9 +563,9 @@ struct  node
             struct node* operand;
         } cast;
     };
-    
 
-    union 
+
+    union
     {
         char cval;
         const char* sval;
@@ -548,8 +573,9 @@ struct  node
         unsigned long lnum;
         unsigned long long llnum;
     };
-    
+
 };
+
 
 
 enum
@@ -627,7 +653,7 @@ struct vector *lex_process_tokens(struct lex_process *process);
 int lex(struct lex_process *process);
 int parse(struct compiler_process* process);
 int codegen(struct compiler_process* process);
-
+struct code_generator* codegenerator_new(struct compiler_process* process);
 void compiler_error(struct compiler_process *compiler, const char *msg, ...);
 
 void compiler_warning(struct compiler_process *compiler, const char *msg, ...);
