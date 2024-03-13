@@ -43,9 +43,77 @@ void asm_push(const char* ins, ...)
     va_end(args);
 }
 
+// Generate DD DW etc. depending on the size of the variable
+static const char* asm_keyword_for_size(size_t size, char*tmp_buff)
+{
+    const char* keyword = NULL;
+    switch (size) {
+        case DATA_SIZE_BYTE:
+            keyword = "db";
+            break;
+        case DATA_SIZE_WORD:
+            keyword = "dw";
+            break;
+        case DATA_SIZE_DWORD:
+            keyword = "dd";
+            break;
+        case DATA_SIZE_DDWORD:
+            keyword = "dq";
+            break;
+        default:
+            // means size * db
+            sprintf(tmp_buff, "times %lld db",(unsigned long)size);
+            return tmp_buff;
+    }
+
+    strcpy(tmp_buff,keyword);
+    return tmp_buff;
+}
+
+void codegen_generate_global_Variable_for_primitive(struct node* node)
+{
+    char tmp_buff[256];
+    if (node->var.val != NULL)
+    {
+        // Handle the value
+        if (node->var.val->type == NODE_TYPE_STRING)
+        {
+#warning "don't forget to handle string value"
+        } else{
+#warning "don't forget to handle the numeric value"
+        }
+    }
+    asm_push("%s: %s 0", node->var.name, asm_keyword_for_size(variable_size((node)),tmp_buff));
+}
+
+void codegen_generate_global_variable(struct node* node )
+{
+    // ; TYPE_NAME VARIABLE_NAME
+    asm_push("; %s %s",node->var.type.type_str, node->var.name);
+    switch (node->var.type.type) {
+        case DATA_TYPE_VOID:
+        case DATA_TYPE_CHAR:
+        case DATA_TYPE_SHORT:
+        case DATA_TYPE_INTEGER:
+        case DATA_TYPE_LONG:
+            codegen_generate_global_Variable_for_primitive(node);
+            break;
+        case DATA_TYPE_DOUBLE:
+        case DATA_TYPE_FLOAT:
+            compiler_error(current_process,"Doubles and floats are not supported in this compiler!");
+            break;
+    }
+}
+
 void codegen_generate_data_section_part(struct node* node)
 {
-    // CREATE A SWITCH FOR PROCESSING THE GLOBAL DATA (anything that will be in the global node)
+    // CREATE A SWITCH FOR PROCESSING THE GLOBAL DATA (anything that will be in the global scope)
+
+    switch (node->type) {
+        case NODE_TYPE_VARIABLE:
+            codegen_generate_global_variable(node);
+            break;
+    }
 }
 
 void codegen_generate_data_section()
