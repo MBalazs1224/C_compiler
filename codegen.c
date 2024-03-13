@@ -237,9 +237,12 @@ void codegen_generate_global_Variable_for_primitive(struct node* node)
         if (node->var.val->type == NODE_TYPE_STRING)
         {
 #warning "don't forget to handle string value"
-        } else{
-#warning "don't forget to handle the numeric value"
+        } else
+        {
+            // IDENTIFIER: SIZE VALUE
+            asm_push("%s: %s %lld",node->var.name, asm_keyword_for_size(variable_size(node),tmp_buff),node->var.val->llnum);
         }
+        return;
     }
     asm_push("%s: %s 0", node->var.name, asm_keyword_for_size(variable_size((node)),tmp_buff));
 }
@@ -338,7 +341,9 @@ void codegen_write_string(struct string_table_element* element)
         }
         asm_push_no_nl("'%c',",c);
     }
+    // Write the ending NULL ('\0') to the string
     asm_push_no_nl("0");
+    // Start a new line
     asm_push("");
 }
 
@@ -378,10 +383,7 @@ int codegen(struct compiler_process* process)
     codegen_finish_scope(0);
 
     // Generate read only data (strings etc.)
-    codegen_register_string("Hello world!!");
-    codegen_register_string("Hello world!!");
-    codegen_register_string("Hello world!!");
-    codegen_register_string("abc\n");
+
     codegen_generate_rod();
 
     return 0;

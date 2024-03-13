@@ -1,3 +1,1 @@
-int x;
-long y;
-char e;
+int a = 50;
