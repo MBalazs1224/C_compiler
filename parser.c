@@ -1320,7 +1320,7 @@ void parse_struct_no_new_scope(struct datatype* dtype, bool is_forward_declarati
         dtype->size = body_node->body.size;
     }
     dtype->struct_node = struct_node;
-    // struct dog {} abc; -> is a variabe so we have to process the variable name
+    // struct dog {} abc; -> is a variabe so we have to compiler the variable name
     if (token_is_identifier(token_peek_next()))
     {
         struct token* var_name = token_peek_next();

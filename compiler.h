@@ -724,7 +724,7 @@ struct resolver_process
         struct resolver_scope* current;
     } scope;
 
-    struct compiler_process* process;
+    struct compiler_process* compiler;
     struct resolver_callback callbacks;
 };
 
@@ -752,6 +752,7 @@ enum
 
 struct resolver_result
 {
+    int flags;
     // This is the first entity in our resolver result
     struct resolver_entity* first_entity_const;
 
@@ -773,14 +774,14 @@ struct resolver_result
     // a.b.c
     struct resolver_result_base
     {
-        // The last resolvable address (a.b.c -> it would the c because all of the variables address is known, a.b->c -> it would be b because there is a pointer address and it's impossible to kno the address at compile time)
+        // The last resolvable address (a.b.c -> it would the c because all of the variables address is known, a.b->c -> it would be b because there is a pointer address and it's impossible to know the address at compile time)
         // The final value is like [ebp-4], [name+4] (if its global) etc.
         char address[60];
         // Contains the base pointer to the variable (EBP if it's on the stack, or the name of the global variable if it's global)
         // It should be used when you need something like [EBP + 4], [GLOBAL_VARIABLE  + 16] etc..
         char base_address[60];
         // The offset from the base
-        // [ebp-4] -> it would be 4
+        // [ebp-4] -> it would be -4
         int offset;
     } base;
 
@@ -793,8 +794,8 @@ struct resolver_scope
     // Contains the resolver_entitys
     struct vector* entities;
 
-    struct resovler_scope*next;
-    struct resovler_scope*prev;
+    struct resolver_scope*next;
+    struct resolver_scope*prev;
 
     void* private;
 };
@@ -876,7 +877,7 @@ struct resolver_entity
 
   // Where the result of the "resolvation" is stored (after we done we will put the result in this address)
   struct resolver_result* result;
-  // The process of the resolver
+  // The compiler of the resolver
   struct resolver_process*process;
 
   //Private data that only the resolver entity creator knows about
