@@ -832,7 +832,6 @@ struct resolver_entity
           // a[50] = 50;
           // a [array_index_node]
         struct datatype dtype;
-        int multiplier;
         struct node* array_index_node;
         int index;
       } array;
@@ -873,7 +872,7 @@ struct resolver_entity
   //The datatype of the resolver entity
   struct datatype dtype;
   // The scope that this entity belongs to
-  struct resovler_scope* scope;
+  struct resolver_scope *scope;
 
   // Where the result of the "resolvation" is stored (after we done we will put the result in this address)
   struct resolver_result* result;
@@ -1025,6 +1024,10 @@ struct node* node_peek_expressionable_or_null();
 bool node_is_struct_or_union_variable(struct node* node);
 struct node*variable_struct_or_union_body_node(struct node* node);
 struct node* variable_node_or_list(struct node* node);
+
+int array_multiplier(struct datatype*dtype, int index, int index_value);
+
+int array_offset(struct datatype*dtype, int index, int index_value);
 
 bool node_is_expression(struct node* node,const char* op);
 
