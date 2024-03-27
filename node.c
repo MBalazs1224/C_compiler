@@ -98,9 +98,9 @@ void make_union_node(const char* name, struct node* body_node)
 
 void make_function_node(struct datatype* ret_type,const char* name, struct vector* arguments, struct node* body_node)
 {
-    node_create(&(struct node){.type = NODE_TYPE_FUNCTION,.func.name = name,.func.args.vector = arguments,.func.body_n = body_node, .func.rtype = *ret_type,.func.args.stack_addition = DATA_SIZE_DDWORD});
+    struct node*function_node = node_create(&(struct node){.type = NODE_TYPE_FUNCTION,.func.name = name,.func.args.vector = arguments,.func.body_n = body_node, .func.rtype = *ret_type,.func.args.stack_addition = DATA_SIZE_DDWORD});
+    function_node->func.frame.elements = vector_create(sizeof(struct stack_frame_element));
 
-#warning "Don't forget to build the frame elements"
 }
 
 void make_if_node(struct node*cond_node, struct node* body_node, struct node* next_node)
