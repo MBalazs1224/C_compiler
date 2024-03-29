@@ -461,6 +461,9 @@ struct resolver_entity* resolver_get_entity_in_scope_with_entity_type(struct res
         int offset = struct_offset(resolver_compiler(resolver),node_var_datatype->type_str,entity_name,&out_node,0,0);
     }
 }
+// --------------------------------------------------------------------------------
+// The variables have to be aligned to the  CPU's word size (on 32 bit -> 4 bytes) because on every CPU cycle it can only load the word size (4 bytes for us) -> if there is an int after a char then there has to be a 3 byte gap between them so the int won't be cut into 2 parts. For example -> char c (offset 0-1), int i (offset 4-8), if it was char c (offset 0-1) and int (offset 1-5) then the CPU could only load the bytes from offset 0-4 and the integer would be cut into 2 parts (from byte 1-4 and 4-5). This is why we need to align the memory. Union offsets are always 0 until a sub struct is discovered.
+// --------------------------------------------------------------------------------
 
 
 

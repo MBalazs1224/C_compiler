@@ -134,3 +134,80 @@ int array_offset(struct datatype*dtype, int index, int index_value)
 
     return array_multiplier(dtype,index,index_value) * datatype_element_size(dtype);
 }
+
+
+// --------------------------------------------------------------------------------
+// The variables have to be aligned to the  CPU's word size (on 32 bit -> 4 bytes) because on every CPU cycle it can only load the word size (4 bytes for us) -> if there is an int after a char then there has to be a 3 byte gap between them so the int won't be cut into 2 parts. For example -> char c (offset 0-1), int i (offset 4-8), if it was char c (offset 0-1) and int (offset 1-5) then the CPU could only load the bytes from offset 0-4 and the integer would be cut into 2 parts (from byte 1-4 and 4-5). This is why we need to align the memory. Union offsets are always 0 until a sub struct is discovered.
+// --------------------------------------------------------------------------------
+
+
+struct node* body_largest_variable_node(struct node* body_node)
+{
+    if (!body_node)
+    {
+        return NULL;
+    }
+
+    if (body_node->type != NODE_TYPE_BODY)
+    {
+        return NULL;
+    }
+
+    return body_node->body.largest_var_node;
+}
+
+struct node* variable_struct_or_union_largest_variable_node(struct node* var_node)
+{
+    return body_largest_variable_node(variable_struct_or_union_body_node(var_node));
+}
+
+// Find an offset for the variable with the given var_name name
+int struct_offset(struct compiler_process*compile_proc, const char*struct_name,  const char*var_name ,struct node**var_node_out, int last_pos, int flags)
+{
+    struct symbol* struct_sym = symresolver_get_symbol(compile_proc,struct_name);
+    assert(struct_sym && struct_sym->type == SYMBOL_TYPE_NODE);
+    struct node* node = struct_sym->data;
+    assert(node_is_struct_or_union(node));
+
+    // We are getting the variables inside the struct body struct abc {VARIABLES}.
+    struct vector* struct_vars_vec = node->_struct.body_n->body.statements;
+    vector_set_peek_pointer(struct_vars_vec,0);
+
+    // If we are accessing the struct backwards then we need to set the peek pointer to the end and iterate through it backward
+    if (flags & STRUCT_ACCESS_BACKWARDS)
+    {
+        vector_set_peek_pointer_end(struct_vars_vec);
+        vector_set_flag(struct_vars_vec,VECTOR_FLAG_PEEK_DECREMENT);
+
+    }
+
+    struct node*var_node_current = variable_node(vector_peek_ptr(struct_vars_vec));
+    struct node*var_node_last = NULL;
+    int position = last_pos;
+    *var_node_out = NULL;
+    while (var_node_current)
+    {
+        *var_node_out = var_node_current;
+        if (var_node_last)
+        {
+            position += variable_size(var_node_last);
+            if (variable_node_is_primitive(var_node_current))
+            {
+                position = align_value_treat_positive(position,var_node_current->var.type.size);
+            } else{
+                position = align_value_treat_positive(position,variable_struct_or_union_largest_variable_node(var_node_current)->var.type.size);
+            }
+        }
+
+        if (S_EQ(var_node_current->var.name, var_name))
+        {
+            // We need to stop because we have found the variable because we have computed it's offset
+            break;
+        }
+        var_node_last = var_node_current;
+        var_node_current = variable_node(vector_peek_ptr(struct_vars_vec));
+    }
+    vector_unset_flag(struct_vars_vec,VECTOR_FLAG_PEEK_DECREMENT);
+    return position;
+
+}
