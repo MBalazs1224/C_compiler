@@ -435,6 +435,13 @@ struct resolver_entity* resolver_create_new_entity_for_function_call(struct reso
     return entity;
 }
 
+// --------------------------------------------------------------------------------
+// The variables have to be aligned to the  CPU's word size (on 32 bit -> 4 bytes) because on every CPU cycle it can only load the word size (4 bytes for us) -> if there is an int after a char then there has to be a 3 byte gap between them so the int won't be cut into 2 parts. For example -> char c (offset 0-1), int i (offset 4-8), if it was char c (offset 0-1) and int (offset 1-5) then the CPU could only load the bytes from offset 0-4 and the integer would be cut into 2 parts (from byte 1-4 and 4-5). This is why we need to align the memory. Union offsets are always 0 until a sub struct is discovered.
+// --------------------------------------------------------------------------------
+
+
+
+
 struct resolver_entity* resolver_register_function(struct resolver_process*process, struct node* func_node, void*private) {
     struct resolver_entity *entity = resolver_create_new_entity(NULL, RESOLVER_ENTITY_TYPE_FUNCTION, private);
     if (!entity)
@@ -449,6 +456,7 @@ struct resolver_entity* resolver_register_function(struct resolver_process*proce
     return entity;
 }
 
+// Gets the entity within the scope with the entity_type type
 struct resolver_entity* resolver_get_entity_in_scope_with_entity_type(struct resolver_result*result, struct resolver_process* resolver, struct resolver_scope* scope, const char* entity_name, int entity_type)
 {
     if (result && result->last_struct_union_entity)
@@ -459,11 +467,120 @@ struct resolver_entity* resolver_get_entity_in_scope_with_entity_type(struct res
         struct node* out_node = NULL;
         struct datatype* node_var_datatype = &result->last_struct_union_entity->dtype;
         int offset = struct_offset(resolver_compiler(resolver),node_var_datatype->type_str,entity_name,&out_node,0,0);
+        if (node_var_datatype->type == DATA_TYPE_UNION)
+        {
+            // Unions have 0 offsets
+            offset = 0;
+        }
+        return resolver_make_entity(resolver,result,NULL,out_node,&(struct resolver_entity){.type = RESOLVER_ENTITY_TYPE_VARIABLE,.offset = offset},scope);
     }
+
+    // Must be primitive type
+
+    // Loop through all the variables inside the scope backwards
+    /*
+     * int abc()
+     * {
+     *      int a,;
+     *      int b;
+     *      int d = a; -> We work up the stack to find a, that's why we need to iterate backwards, because everythind needs to be declared before it can be accessed -> a will be above d
+     * }
+     */
+    vector_set_peek_pointer_end(scope->entities);
+    vector_set_flag(scope->entities,VECTOR_FLAG_PEEK_DECREMENT);
+    struct resolver_entity* current = vector_peek_ptr(scope->entities);
+
+    while (current)
+    {
+        // Ignores all entities that are not the same type as the given entity_type
+        // entity_type == -1 -> deal with every entity type, don't ignore anything
+        if (entity_type != -1 && current->type != entity_type)
+        {
+            current = vector_peek_ptr(scope->entities);
+            continue;
+        }
+        if (S_EQ(current->name,entity_name))
+        {
+            // We found the entity we are looking for
+            break;
+        }
+        current = vector_peek_ptr(scope->entities);
+    }
+    return current;
 }
-// --------------------------------------------------------------------------------
-// The variables have to be aligned to the  CPU's word size (on 32 bit -> 4 bytes) because on every CPU cycle it can only load the word size (4 bytes for us) -> if there is an int after a char then there has to be a 3 byte gap between them so the int won't be cut into 2 parts. For example -> char c (offset 0-1), int i (offset 4-8), if it was char c (offset 0-1) and int (offset 1-5) then the CPU could only load the bytes from offset 0-4 and the integer would be cut into 2 parts (from byte 1-4 and 4-5). This is why we need to align the memory. Union offsets are always 0 until a sub struct is discovered.
-// --------------------------------------------------------------------------------
+
+struct resolver_entity* resolver_get_entity_for_type(struct resolver_result* result, struct resolver_process* resolver, const char* entity_name, int entity_type)
+{
+    struct resolver_scope* scope = resolver->scope.current;
+    struct resolver_entity* entity = NULL;
+
+    // Tries to find the entity in a scope, if it can't, it tries the next scope
+
+
+    /*
+     * int test()
+     * {
+     *      int b;
+     *      if(1)
+     *      {
+     *          int a = b;
+     *          It won't find be in the if scope, so because the vector is being iterated backwards,          it will look for b in the previous scope (the scope of test()), it will do it until           it finds it or there are no more scopes
+     *      }
+     *
+     * }
+     *
+     */
+    while (scope)
+    {
+        entity = resolver_get_entity_in_scope_with_entity_type(result,resolver,scope,entity_name,entity_type);
+        if (entity)
+        {
+            break;
+        }
+        scope = scope->prev;
+    }
+
+    if (entity)
+    {
+        memset(&entity->last_resolve,0, sizeof(entity->last_resolve));
+    }
+
+    return entity;
+}
+
+struct resolver_entity* resolver_get_entity(struct resolver_result* result, struct resolver_process* resolver, const char* entity_name)
+{
+    // -1 means it won't ignore any type and will return the first entity with the given entity_name (doesn't matter if it is a function or variable etc.)
+    return resolver_get_entity_for_type(result,resolver,entity_name,-1);
+}
+
+struct resolver_entity* resolver_get_entity_in_scope(struct resolver_result* result,struct resolver_process* resolver, struct resolver_scope* scope, const char* entity_name)
+{
+    // -1 means it won't ignore any type and will return the first entity with the given entity_name (doesn't matter if it is a function or variable etc.)
+    return resolver_get_entity_in_scope_with_entity_type(result,resolver,scope,entity_name,-1);
+}
+
+struct resolver_entity* resolver_get_variable(struct resolver_result* result,struct resolver_process* resolver, const char* entity_name)
+{
+    // We only want variables
+    return resolver_get_entity_for_type(result,resolver,entity_name,RESOLVER_ENTITY_TYPE_VARIABLE);
+}
+
+struct resolver_entity* resolver_get_function_in_scope(struct resolver_result* result,struct resolver_process* resolver,const char* func_name, struct resolver_scope* scope)
+{
+    // We only want functions
+    return resolver_get_entity_for_type(result,resolver,func_name,RESOLVER_ENTITY_TYPE_FUNCTION);
+}
+
+struct resolver_entity* resolver_get_function(struct resolver_result* result,struct resolver_process* resolver,const char* func_name)
+{
+    struct resolver_entity* entity = NULL;
+    // Gets the function entity in the root scope
+    struct resolver_scope* scope = resolver->scope.root;
+    entity = resolver_get_function_in_scope(result,resolver,func_name,scope);
+    return entity;
+}
+
 
 
 
