@@ -17,7 +17,7 @@ bool resolver_result_finished(struct resolver_result*result)
     return result->flags & RESOLVER_RESULT_FLAG_RUNTIME_NEEDED_TO_FINISH_PATH;
 }
 
-struct resolver_entity* resolver_reslt_entity_root(struct resolver_result* result)
+struct resolver_entity* resolver_result_entity_root(struct resolver_result* result)
 {
     return result->entity;
 }
@@ -463,7 +463,7 @@ struct resolver_entity* resolver_get_entity_in_scope_with_entity_type(struct res
     {
         // This means we are accessing a structure or union
 
-        struct resolver_scope* scope = result->last_struct_union_entity;
+        struct resolver_scope* scope = result->last_struct_union_entity->scope;
         struct node* out_node = NULL;
         struct datatype* node_var_datatype = &result->last_struct_union_entity->dtype;
         int offset = struct_offset(resolver_compiler(resolver),node_var_datatype->type_str,entity_name,&out_node,0,0);
@@ -572,27 +572,93 @@ struct resolver_entity* resolver_get_function_in_scope(struct resolver_result* r
     return resolver_get_entity_for_type(result,resolver,func_name,RESOLVER_ENTITY_TYPE_FUNCTION);
 }
 
+// Gets the function entity in the root scope
 struct resolver_entity* resolver_get_function(struct resolver_result* result,struct resolver_process* resolver,const char* func_name)
 {
     struct resolver_entity* entity = NULL;
-    // Gets the function entity in the root scope
     struct resolver_scope* scope = resolver->scope.root;
     entity = resolver_get_function_in_scope(result,resolver,func_name,scope);
     return entity;
 }
 
+// Looks for the entity with the given name
+struct resolver_entity* resolver_follow_for_name (struct resolver_process* resolver, const char* name, struct resolver_result* result)
+{
+    struct resolver_entity* entity = resolver_entity_clone(resolver_get_entity(result,resolver,name));
+    if (!entity)
+    {
+        return NULL;
+    }
+    resolver_result_entity_push(result,entity);
 
+    // The first found identifier
+    if (result->identifier)
+    {
+        result->identifier = entity;
+    }
+    // If the entity is a variable or function and the datatype is struct or union then we have to set the last struct or union entity to the found entity
+    if (entity->type == RESOLVER_ENTITY_TYPE_VARIABLE && datatype_is_struct_or_union(&entity->var_data.dtype) || entity->type == RESOLVER_ENTITY_TYPE_FUNCTION && datatype_is_struct_or_union(&entity->dtype))
+    {
+        result->last_struct_union_entity = entity;
+    }
+    return entity;
+}
 
+struct resolver_entity* resolver_follow_identifier(struct resolver_process* resolver, struct node* node, struct resolver_result* result)
+{
+    struct resolver_entity* entity = resolver_follow_for_name(resolver,node->sval,result);
+    if (entity)
+    {
+        entity->last_resolve.referencing_node = node;
+    }
+    return entity;
+}
 
+struct resolver_entity* resolver_follow_part_return_entity(struct resolver_process* resolver, struct node* node, struct resolver_result* result)
+{
+    struct resolver_entity* entity = NULL;
+    switch (node->type) {
+        case NODE_TYPE_IDENTIFIER:
+                entity = resolver_follow_identifier(resolver,node,result);
+            break;
+    }
+}
 
+void resolver_follow_part(struct resolver_process* resolver, struct node* node, struct resolver_result* result)
+{
+    resolver_follow_part_return_entity(resolver,node,result);
 
+}
 
+void resolver_execute_rules(struct resolver_process* resolver, struct resolver_result* result)
+{
 
+}
 
+void resolver_merge_compile_times(struct resolver_process* resolver, struct resolver_result* result)
+{
 
+}
 
+void resolver_finalize_result(struct resolver_process* resolver, struct resolver_result* result)
+{
 
+}
 
-
-
-
+// Node will be the expression node (for example a.b.c -> it will be a)
+struct resolver_result* resolver_follow(struct resolver_process* resolver, struct node* node)
+{
+    assert(resolver);
+    assert(node);
+    struct resolver_result* result = resolver_new_result(resolver);
+    resolver_follow_part(resolver,node,result);
+    // Make sure we have a root entity
+    if (!resolver_result_entity_root(result))
+    {
+        result->flags |= RESOLVER_RESULT_FLAG_FAILED;
+    }
+    resolver_execute_rules(resolver,result);
+    resolver_merge_compile_times(resolver,result);
+    resolver_finalize_result(resolver,result);
+    return result;
+}
