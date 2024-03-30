@@ -3,6 +3,8 @@
 #include "helpers/vector.h"
 #include <assert.h>
 void resolver_follow_part(struct resolver_process* resolver, struct node* node, struct resolver_result* result);
+struct resolver_entity* resolver_follow_exp (struct resolver_process* resolver, struct node* node, struct resolver_result* result);
+struct resolver_result* resolver_follow(struct resolver_process* resolver, struct node* node);
 bool resolver_result_failed(struct resolver_result* result)
 {
     return result->flags & RESOLVER_RESULT_FLAG_FAILED;
@@ -647,6 +649,94 @@ struct resolver_entity*  resolver_follow_struct_exp(struct resolver_process* res
 
 }
 
+struct resolver_entity* resolver_follow_array (struct resolver_process* resolver, struct node* node, struct resolver_result* result)
+{
+    // Follow the path of the left and right part of the array
+    resolver_follow_part(resolver,node->exp.left,result);
+    struct resolver_entity* left_entity = resolver_result_peek(result);
+    resolver_follow_part(resolver,node->exp.right,result);
+
+    return left_entity;
+}
+
+struct datatype* resolver_get_datatype(struct resolver_process* resolver, struct node* node)
+{
+    struct resolver_result* result = resolver_follow(resolver,node);
+    if (!resolver_result_ok(result))
+    {
+        return NULL;
+    }
+    return &result->last_entity->dtype;
+}
+// It computes the stack size for the function call arguments (how many bytes will it take up aligned to the word size to fully push the arguments to the stack)
+void resolver_build_function_call_arguments(struct resolver_process* resolver,struct node* argument_node, struct resolver_entity* root_func_call_entity, size_t* total_size_out)
+{
+    // If there are arguments we need to push them to the stack
+    // abc(50,20,30) -> 50,20,30 would be in the expression node
+    if (is_argument_node(argument_node))
+    {
+        // 50,30 would be in the exp node, so we need to build it for both parts
+        resolver_build_function_call_arguments(resolver,argument_node->exp.left,root_func_call_entity,total_size_out);
+        resolver_build_function_call_arguments(resolver,argument_node->exp.right,root_func_call_entity,total_size_out);
+    }
+    // If there is a parenthesis (abc((50))) we need to do it differently a bit
+    else if (argument_node->type == NODE_TYPE_EXPRESSION_PARENTHESIS)
+    {
+        resolver_build_function_call_arguments(resolver,argument_node->parenthesis.exp,root_func_call_entity,total_size_out);
+    }
+    // If the node is valdi then we push
+    else if (node_valid(argument_node))
+    {
+        vector_push(root_func_call_entity->func_call_data.arguments, &argument_node);
+        // We assume it's numeric, so we set it to the word size
+        size_t stack_change = DATA_SIZE_DWORD;
+        struct datatype* dtype = resolver_get_datatype(resolver,argument_node);
+        // The change will be the word size (4 bytes) unless it's a structure
+
+        // Numeric values don't return a datatype,so they will stay the word size, but for example variable names (abc(var_name)) will and we need to process them accordingly
+
+        if (dtype)
+        {
+            stack_change = datatype_element_size(dtype);
+            if (stack_change < DATA_SIZE_DWORD)
+            {
+                stack_change = DATA_SIZE_DWORD;
+            }
+            // Align the value to the word size
+            stack_change = align_value(stack_change,DATA_SIZE_DWORD);
+        }
+        // Add this argument's size to the total stack size
+        *total_size_out += stack_change;
+    }
+
+}
+
+struct resolver_entity* resolver_follow_function_call (struct resolver_process* resolver,  struct resolver_result* result ,struct node* node)
+{
+    resolver_follow_part(resolver,node->exp.left,result);
+    struct resolver_entity* left_entity = resolver_result_peek(result);
+    struct resolver_entity* func_call_entity = resolver_create_new_entity_for_function_call(result,resolver,left_entity,NULL);
+    assert(func_call_entity);
+    func_call_entity->flags |= RESOLVER_ENTITY_FLAG_NO_MERGE_WITH_LEFT_ENTITY | RESOLVER_ENTITY_FLAG_NO_MERGE_WITH_NEXT_ENTITY;
+    // Right node is the func arguments, left one is the func name
+    resolver_build_function_call_arguments(resolver,node->exp.right,func_call_entity,&func_call_entity->func_call_data.stack_size);
+
+    // Push the function call entity to the stack
+    resolver_result_entity_push(result,func_call_entity);
+
+    return func_call_entity;
+}
+struct resolver_entity* resolver_follow_parentheses (struct resolver_process* resolver, struct node* node, struct resolver_result* result)
+{
+    //abc() -> exp.left -> abc, exp.right ->(), if the left part of the expression is an identifier then it means that it must be a function call
+    if (node->exp.left->type == NODE_TYPE_IDENTIFIER)
+    {
+        return resolver_follow_function_call(resolver,result,node);
+    }
+    // It must be a normal expression
+    return resolver_follow_struct_exp(resolver,node->parenthesis.exp,result);
+}
+
 struct resolver_entity* resolver_follow_exp (struct resolver_process* resolver, struct node* node, struct resolver_result* result)
 {
     struct resolver_entity* entity = NULL;
@@ -654,6 +744,15 @@ struct resolver_entity* resolver_follow_exp (struct resolver_process* resolver, 
     {
         entity = resolver_follow_struct_exp(resolver,node,result);
     }
+    else if (is_array_node(node))
+    {
+        entity = resolver_follow_array(resolver,node,result);
+    }
+    else if (is_parentheses_node(node))
+    {
+        entity = resolver_follow_parentheses(resolver,node,result);
+    }
+    return entity;
 }
 
 struct resolver_entity* resolver_follow_part_return_entity(struct resolver_process* resolver, struct node* node, struct resolver_result* result)

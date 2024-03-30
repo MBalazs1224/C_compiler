@@ -1040,8 +1040,10 @@ bool is_parentheses_operator(const char* op);
 bool is_access_node(struct node* node);
 bool is_access_node_with_op(struct node* node, const char* op);
 bool is_array_node(struct node* node);
+bool is_argument_node(struct node* node);
 bool is_parentheses_node(struct node* node);
-
+bool is_argument_node(struct node* node);
+bool is_argument_operator(const char* op);
 
 int array_multiplier(struct datatype*dtype, int index, int index_value);
 
@@ -1051,7 +1053,7 @@ struct node* variable_struct_or_union_largest_variable_node(struct node* var_nod
 struct node* body_largest_variable_node(struct node* body_node);
 
 bool node_is_expression(struct node* node,const char* op);
-
+bool node_valid(struct node* node);
 bool is_array_node(struct node* node);
 bool is_node_assignment(struct node* node);
 
