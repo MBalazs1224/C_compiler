@@ -668,7 +668,7 @@ enum {
     RESOLVER_ENTITY_FLAG_JUST_USE_OFFSET = 0b00010000,
     RESOLVER_ENTITY_FLAG_DO_IS_POINTER_ARRAY_ENTITY = 0b00100000,
     RESOLVER_ENTITY_FLAG_WAS_CASTED = 0b01000000,
-    RESOLVER_ENTITY_USES_ARRAY_BRACKETS = 0b10000000
+    RESOLVER_ENTITY_FLAG_USES_ARRAY_BRACKETS = 0b10000000
 };
 
 enum
@@ -1044,9 +1044,9 @@ bool is_argument_node(struct node* node);
 bool is_parentheses_node(struct node* node);
 bool is_argument_node(struct node* node);
 bool is_argument_operator(const char* op);
-
+void datatype_decrement_pointer(struct datatype* dtype);
 int array_multiplier(struct datatype*dtype, int index, int index_value);
-
+size_t array_brackets_count(struct datatype* dtype);
 int array_offset(struct datatype*dtype, int index, int index_value);
 int struct_offset(struct compiler_process*compile_proc, const char*struct_name,  const char*var_name ,struct node**var_node_out, int last_pos, int flags);
 struct node* variable_struct_or_union_largest_variable_node(struct node* var_node);

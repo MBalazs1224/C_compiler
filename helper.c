@@ -254,3 +254,12 @@ bool is_argument_node(struct node* node)
     return node->type == NODE_TYPE_EXPRESSION && is_argument_operator(node->exp.op);
 }
 
+void datatype_decrement_pointer(struct datatype* dtype)
+{
+    dtype->pointer_depth--;
+    if (dtype->pointer_depth <= 0)
+    {
+        // Reset the flag that it's a pointer
+        dtype->flags &= ~DATATYPE_FLAG_IS_POINTER;
+    }
+}

@@ -5,6 +5,7 @@
 void resolver_follow_part(struct resolver_process* resolver, struct node* node, struct resolver_result* result);
 struct resolver_entity* resolver_follow_exp (struct resolver_process* resolver, struct node* node, struct resolver_result* result);
 struct resolver_result* resolver_follow(struct resolver_process* resolver, struct node* node);
+struct resolver_entity* resolver_follow_array_bracket(struct resolver_process* resolver, struct node* node, struct resolver_result* result);
 bool resolver_result_failed(struct resolver_result* result)
 {
     return result->flags & RESOLVER_RESULT_FLAG_FAILED;
@@ -755,6 +756,79 @@ struct resolver_entity* resolver_follow_exp (struct resolver_process* resolver, 
     return entity;
 }
 
+void resolver_array_bracket_set_flags(struct resolver_entity* bracket_entity,struct datatype* dtype,struct node* bracket_node, int index)
+{
+    /*
+     * char* abc; not an array
+     * abc[4]; we are accessing it like an array
+     */
+    // We can do abc[1][2] that's why we need array_brackets_count(dtype) <= index
+    if (!(dtype->flags & DATATYPE_FLAG_IS_ARRAY) || array_brackets_count(dtype) <= index)
+    {
+        // We don't merge and set teh flag to know it's a pointer array
+        bracket_entity->flags = RESOLVER_ENTITY_FLAG_NO_MERGE_WITH_LEFT_ENTITY | RESOLVER_ENTITY_FLAG_NO_MERGE_WITH_NEXT_ENTITY | RESOLVER_ENTITY_FLAG_DO_IS_POINTER_ARRAY_ENTITY;
+    }
+    else if (bracket_node->bracket.inner->type != NODE_TYPE_NUMBER)
+    {
+        bracket_entity->flags = RESOLVER_ENTITY_FLAG_NO_MERGE_WITH_LEFT_ENTITY | RESOLVER_ENTITY_FLAG_NO_MERGE_WITH_NEXT_ENTITY;
+
+    }
+    else
+    {
+        // If it's a number then we just use it's offset
+        bracket_entity->flags = RESOLVER_ENTITY_FLAG_JUST_USE_OFFSET;
+    }
+}
+
+struct resolver_entity* resolver_follow_array_bracket(struct resolver_process* resolver, struct node* node, struct resolver_result* result)
+{
+    // Make sure it's a bracket node
+    assert(node->type == NODE_TYPE_BRACKET);
+    int index = 0;
+    struct datatype dtype;
+    struct resolver_scope* scope = NULL;
+    // Get the last entity but ignore the rules
+    struct resolver_entity* last_entity = resolver_result_peek_ignore_rule_entity(result);
+    scope = last_entity->scope;
+    dtype = last_entity->dtype;
+    // This function can be recursive so we always need to get the index+1 because if we call this function again on this node, we are no longer accessing the 0th
+    /*
+     * int abc[50][2];
+     * abc[3][4] -> when we call it on [3] the index is 0 but when we call it on [4] the index is 1 so we get the last index and add 1 to it to get teh correct index
+     */
+    if (last_entity->type == RESOLVER_ENTITY_TYPE_ARRAY_BRACKET)
+    {
+        index = last_entity->array.index + 1;
+    }
+    // We need to calculate the array size differently (and we calculate it on index+1 just like above)
+    if (dtype.flags & DATATYPE_FLAG_IS_ARRAY)
+    {
+        dtype.array.size = array_brackets_calculate_size_from_index(&dtype,dtype.array.brackets,index + 1);
+
+    }
+    // We need to reduce the datatype
+
+    void* private = resolver->callbacks.new_array_entity(result,node);
+    struct resolver_entity* array_bracket_entity = resolver_create_new_entity_for_array_brackets(result,resolver,node,node->bracket.inner,index,&dtype,private,scope);
+    struct resolver_entity_rule rule = {};
+    // Set the correct array bracket flags (it's a pointer, use the offset etc.)
+    resolver_array_bracket_set_flags(array_bracket_entity,&dtype,node,index);
+
+    // Tell the code generator that the entity is using array brackets
+    last_entity->flags |= RESOLVER_ENTITY_FLAG_USES_ARRAY_BRACKETS;
+
+    /*
+     * char abc[3];
+     * abc[3][2]; -> after processing [3] it becomes abc[2] so the pointer depth actually decreased
+     */
+    if (array_bracket_entity->flags & RESOLVER_ENTITY_FLAG_DO_IS_POINTER_ARRAY_ENTITY)
+    {
+        datatype_decrement_pointer(&array_bracket_entity->dtype);
+    }
+    resolver_result_entity_push(result,array_bracket_entity);
+    return array_bracket_entity;
+}
+
 struct resolver_entity* resolver_follow_part_return_entity(struct resolver_process* resolver, struct node* node, struct resolver_result* result)
 {
     struct resolver_entity* entity = NULL;
@@ -767,6 +841,9 @@ struct resolver_entity* resolver_follow_part_return_entity(struct resolver_proce
             break;
         case NODE_TYPE_EXPRESSION:
             entity = resolver_follow_exp(resolver,node,result);
+            break;
+        case NODE_TYPE_BRACKET:
+            entity = resolver_follow_array_bracket(resolver,node,result);
             break;
     }
 }
