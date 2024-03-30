@@ -299,10 +299,7 @@ bool node_is_expression(struct node* node,const char* op)
     return node->type == NODE_TYPE_EXPRESSION && S_EQ(node->exp.op,op);
 }
 
-bool is_array_node(struct node* node)
-{
-    return node_is_expression(node,"[]");
-}
+
 
 bool is_node_assignment(struct node* node)
 {
