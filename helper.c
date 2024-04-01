@@ -263,3 +263,13 @@ void datatype_decrement_pointer(struct datatype* dtype)
         dtype->flags &= ~DATATYPE_FLAG_IS_POINTER;
     }
 }
+
+bool op_is_indirection(const char* op)
+{
+    return S_EQ(op,"*");
+}
+
+bool is_unary_operator(const char* op)
+{
+    return S_EQ(op,"-") || S_EQ(op,"!")  || S_EQ(op,"~") || S_EQ(op,"*") || S_EQ(op,"&");
+}

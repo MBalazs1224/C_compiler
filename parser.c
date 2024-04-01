@@ -365,14 +365,78 @@ void parser_reorder_expression(struct node** node_out)
 
 }
 
+bool parser_is_unary_operator(const char* op)
+{
+    return is_unary_operator(op);
+}
+int parser_get_pointer_depth();
+
+void parse_for_indirection_unary()
+{
+    // It will be a pointer access, so we need to get the depth of it (it can be like ****a)
+    int depth = parser_get_pointer_depth();
+
+    // parse_expressionable will push the operand of the expression to the stack (***a -> a)
+    parse_expressionable(history_begin(0));
+
+    // Pop the operand from the stack
+    struct node* unary_operand_node = node_pop();
+
+    //Create a unary node
+    make_unary_node("*",unary_operand_node);
+
+    // Set the pointer depth of the node
+    struct node* unary_node = node_pop();
+    unary_node->unary.indirection.depth = depth;
+    node_push(unary_node);
+
+    //The above 2 steps could be combined but I will keep it like this because it's like this in the course
+}
+
+void parse_for_normal_unary()
+{
+    // -a -> token_peek_next() will get the operator (this case -)
+    const char* unary_op = token_next()->sval;
+
+    // parse_expressionable will push the operand of the expression to the stack (int this case a)
+    parse_expressionable(history_begin(0));
+
+    // Get the operand node from the stack and create a unary node from it
+    struct node* unary_operand_node = node_pop();
+    make_unary_node(unary_op,unary_operand_node);
+}
+void parser_deal_with_additional_expression();
+
+void parse_for_unary()
+{
+    const char* unary_op = token_peek_next()->sval;
+    // Indirection -> pointer access
+    if (op_is_indirection(unary_op))
+    {
+        parse_for_indirection_unary();
+        return;
+    }
+    parse_for_normal_unary();
+    parser_deal_with_additional_expression();
+}
+
+void parse_for_parentheses(struct history* history);;
 
 void parse_exp_normal(struct history* history)
 {
     struct token* op_token = token_peek_next();
     const char* op = op_token->sval;
     struct node* node_left = node_peek_expressionable_or_null();
+
+    // If an expression doesn't have a left operand then it must be a unary operator, if it's not then it's not a valid expression
     if (!node_left)
     {
+        // *a = 50 -> valid, *5 -> not valid, 5*5 -> valid also
+        if (!parser_is_unary_operator(op))
+        {
+            compiler_error(current_process, "The given expression has no left operand!");
+        }
+        parse_for_unary();
         return;
     }
     // Pop off operator token
@@ -381,7 +445,30 @@ void parse_exp_normal(struct history* history)
     node_pop();
 
     node_left->flags |= NODE_FLAG_INSIDE_EXPRESSION;
-    parse_expressionable_for_op(history_down(history,history->flags),op);
+    // If the next token is an operator, it can be a unary
+    if (token_peek_next()->type == TOKEN_TYPE_OPERATOR)
+    {
+        // Parse for parenthesis if its one
+        if (S_EQ(token_peek_next()->sval,"("))
+        {
+            parse_for_parentheses(history_down(history,history->flags | HISTORY_FLAG_PARENTHESIS_IS_NOT_A_FUNCTION_CALL));
+        }
+        // If its a unary, parse for it
+        else if (parser_is_unary_operator(token_peek_next()->sval))
+        {
+            parse_for_unary();
+        }
+        else
+        {
+            compiler_error(current_process,"Two operators are exoected for a given expression for operator %s!\n",token_peek_next()->sval);
+        }
+    }
+    else
+    {
+        parse_expressionable_for_op(history_down(history,history->flags),op);
+    }
+
+
     struct node* node_right = node_pop();
     node_right->flags |= NODE_FLAG_INSIDE_EXPRESSION;
     make_exp_node(node_left,node_right,op);

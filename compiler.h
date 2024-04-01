@@ -414,6 +414,23 @@ struct parsed_switch_case
     // Index of parsed case
     int index;
 };
+struct node;
+struct unary
+{
+    // "*" for pointer access... even for multiple pointer access (**) only the first operator is here
+    const char* op;
+    struct node* operand;
+    union
+    {
+        struct indirection
+        {
+            // The pointer depth
+            int depth;
+        } indirection;
+    };
+
+
+};
 
 struct  node
 {
@@ -423,7 +440,7 @@ struct  node
     struct pos pos;
     struct node_binded
     {
-        //Pointer tp body node / owner
+        //Pointer to body node / owner
         struct node* owner;
         //Pointer to the function that this node is in
         struct node* function;
@@ -646,6 +663,8 @@ struct  node
             //Will point to the 56
             struct node* operand;
         } cast;
+
+        struct unary unary;
     };
 
 
@@ -1018,6 +1037,7 @@ void make_case_node(struct node* exp_node);
 void make_tenary_node(struct node*true_node, struct node* false_node);
 void make_cast_node(struct datatype* dtype, struct node* operand_node);
 void make_union_node(const char* name, struct node* body_node);
+void make_unary_node(const char* op, struct node* operand_node);
 
 bool keyword_is_datatype(const char *str);
 
@@ -1056,7 +1076,8 @@ bool node_is_expression(struct node* node,const char* op);
 bool node_valid(struct node* node);
 bool is_array_node(struct node* node);
 bool is_node_assignment(struct node* node);
-
+bool is_unary_operator(const char* op);
+bool op_is_indirection(const char* op);
 struct array_brackets* array_brackets_new();
 
 void array_brackets_free(struct array_brackets* brackets);
