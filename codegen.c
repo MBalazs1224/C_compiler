@@ -4,7 +4,7 @@
 #include "helpers/vector.h"
 #include <assert.h>
 static struct compiler_process* current_process = NULL;
-
+int codegen_label_count();
 
 void codegen_new_scope(int flags)
 {
