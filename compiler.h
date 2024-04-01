@@ -1078,6 +1078,7 @@ bool is_array_node(struct node* node);
 bool is_node_assignment(struct node* node);
 bool is_unary_operator(const char* op);
 bool op_is_indirection(const char* op);
+bool op_is_address(const char* op);
 struct array_brackets* array_brackets_new();
 
 void array_brackets_free(struct array_brackets* brackets);
