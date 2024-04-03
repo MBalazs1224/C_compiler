@@ -965,9 +965,59 @@ void resolver_follow_part(struct resolver_process* resolver, struct node* node, 
 
 }
 
+void resolver_rule_apply_rules(struct resolver_entity* rule_entity,struct resolver_entity* left_entity,struct resolver_entity* right_entity)
+{
+    assert(rule_entity->type == RESOLVER_ENTITY_TYPE_RULE);
+
+    // Apply the rules for both side entities
+    if (left_entity)
+    {
+        left_entity->flags |= rule_entity->rule.left.flags;
+    }
+    if (right_entity)
+    {
+        right_entity->flags |= rule_entity->rule.right.flags;
+    }
+}
+
+void resolver_push_vector_of_entities(struct resolver_result*result, struct vector* vec)
+{
+    // Set the flags to iterate the vector backwards
+    vector_set_peek_pointer_end(vec);
+    vector_set_flag(vec,VECTOR_FLAG_PEEK_DECREMENT);
+
+    // Push the entire vector into the result->entity stack
+    struct resolver_entity* entity = vector_peek_ptr(vec);
+    while (entity)
+    {
+        resolver_result_entity_push(result,entity);
+        entity = vector_peek_ptr(vec);
+    }
+}
+
 void resolver_execute_rules(struct resolver_process* resolver, struct resolver_result* result)
 {
+    // Iterate through all entities in the result stack, pop them and if they are a rule then apply them to the correct entity nad at the end push everything back to the stack (saved_entities is a temporary vector to store the popped entities)
+    struct vector* saved_entities = vector_create(sizeof(struct resolver_entity*));
+    struct resolver_entity* entity = resolver_result_pop(result);
+    struct resolver_entity* last_processed_entity = NULL;
 
+    // Iterate the vector
+    while (entity)
+    {
+        if (entity->type == RESOLVER_ENTITY_TYPE_RULE)
+        {
+            // Execute the rules so they get applied
+            struct resolver_entity* left_entity = resolver_result_pop(result);
+            resolver_rule_apply_rules(entity,left_entity,last_processed_entity);
+            entity = left_entity;
+        }
+        vector_push(saved_entities,&entity);
+        last_processed_entity = entity;
+        entity = resolver_result_pop(result);
+    }
+    // Push everything back to the stack
+    resolver_push_vector_of_entities(result,saved_entities);
 }
 
 void resolver_merge_compile_times(struct resolver_process* resolver, struct resolver_result* result)

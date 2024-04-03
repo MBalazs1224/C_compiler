@@ -895,8 +895,9 @@ struct resolver_entity
 
   // Where the result of the "resolvation" is stored (after we done we will put the result in this address)
   struct resolver_result* result;
-  // The compiler of the resolver
-  struct resolver_process*process;
+
+  // The resolver process
+  struct resolver_process* resolver;
 
   //Private data that only the resolver entity creator knows about
   void*private;
