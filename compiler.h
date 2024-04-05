@@ -769,6 +769,44 @@ enum
     RESOLVER_RESULT_FLAG_DOES_GET_ADDRESS = 0b10000000,
 };
 
+enum
+{
+    RESOLVER_DEFAULT_ENTITY_TYPE_STACK,
+    RESOLVER_DEFAULT_ENTITY_TYPE_SYMBOL
+};
+
+
+enum
+{
+    RESOLVER_DEFAULT_ENTITY_FLAG_IS_LOCAL_STACK = 0b00000001
+};
+
+enum
+{
+    RESOLVER_DEFAULT_ENTITY_DATA_TYPE_VARIABLE,
+    RESOLVER_DEFAULT_ENTITY_DATA_TYPE_FUNCTION,
+    RESOLVER_DEFAULT_ENTITY_DATA_TYPE_ARRAY_BRACKET
+};
+
+struct resolver_default_entity_data
+{
+    // The type of data i.e. variable, function etc.
+    int type;
+    // The address for example [ebp-4], [var_name + 4]
+    char address[60];
+    // The base address for example ebp, var_name etc.
+    char base_address[60];
+    // The offset from the base address for example -4, +2 etc.
+    int offset;
+    // Flags relating to the entity data
+    int flags;
+};
+
+struct resolver_default_scope_data
+{
+    int flags;
+};
+
 struct resolver_result
 {
     int flags;
@@ -1074,6 +1112,13 @@ int array_offset(struct datatype*dtype, int index, int index_value);
 int struct_offset(struct compiler_process*compile_proc, const char*struct_name,  const char*var_name ,struct node**var_node_out, int last_pos, int flags);
 struct node* variable_struct_or_union_largest_variable_node(struct node* var_node);
 struct node* body_largest_variable_node(struct node* body_node);
+struct resolver_entity* resolver_make_entity(struct resolver_process* process, struct resolver_result* result, struct datatype*custom_dtype, struct node*node , struct resolver_entity* guided_entity, struct resolver_scope*scope);
+struct resolver_process* resolver_new_process(struct compiler_process* compiler, struct resolver_callback* callbacks);
+struct resolver_entity* resolver_new_entity_for_var_node( struct resolver_process* process,struct node* var_node, void* private,int offset);
+struct resolver_entity* resolver_register_function(struct resolver_process*process, struct node* func_node, void*private);
+struct resolver_scope* resolver_new_scope_create();
+void resolver_finish_scope(struct resolver_process* resolver);
+struct resolver_scope* resolver_new_scope(struct resolver_process* resolver, void* private ,int flags);
 
 bool node_is_expression(struct node* node,const char* op);
 bool node_valid(struct node* node);
