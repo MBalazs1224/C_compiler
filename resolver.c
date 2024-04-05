@@ -1020,9 +1020,77 @@ void resolver_execute_rules(struct resolver_process* resolver, struct resolver_r
     resolver_push_vector_of_entities(result,saved_entities);
 }
 
+struct resolver_entity* resolver_merge_compile_time_result(struct resolver_process* resolver, struct resolver_result* result, struct resolver_entity*left_entity, struct resolver_entity* right_entity)
+        {
+            if (left_entity && right_entity)
+            {
+                // If one of the no merge flag is present than that means we cannot merge the entities, so we return null (and possibly perform memory cleanup, that's for later implementation)
+                if (left_entity->flags & RESOLVER_ENTITY_FLAG_NO_MERGE_WITH_NEXT_ENTITY || right_entity->flags & RESOLVER_ENTITY_FLAG_NO_MERGE_WITH_LEFT_ENTITY)
+                {
+                    goto no_merge_possible;
+                }
+                struct resolver_entity* result_entity = resolver->callbacks.merge_entities(resolver,result,left_entity,right_entity);
+                if (!result_entity)
+                {
+                    goto no_merge_possible;
+                }
+                return result_entity;
+            }
+
+
+
+            no_merge_possible:
+            return NULL;
+}
+
+
+void _resolver_merge_compile_times(struct resolver_process* resolver, struct resolver_result* result)
+{
+    struct vector* saved_entities = vector_create(sizeof(struct resolver_entity*));
+    while (true)
+    {
+        struct resolver_entity* rightentity = resolver_result_pop(result);
+        struct resolver_entity* left_entity = resolver_result_pop(result);
+        // If we don't have 2 entities than we cannot merge (if we don't have the right entity it means we had none)
+        if (!rightentity)
+        {
+            break;
+        }
+        if (!left_entity)
+        {
+            // We only have on entity
+            resolver_result_entity_push(result,rightentity);
+            break;
+        }
+        struct resolver_entity* merged_entity = resolver_merge_compile_time_result(resolver,result,left_entity,rightentity);
+
+        // If the merge was successful push it back to the stack so the merging can continue using this now merged entity
+        if (merged_entity)
+        {
+            resolver_result_entity_push(result,merged_entity);
+            continue;
+        }
+
+        // If the merged_entity returned null it means that the merge wasn't possible (maybe incompatible types etc.), so we need to set the no merge flag to prevent it trying to merge again
+        rightentity->flags |= RESOLVER_ENTITY_FLAG_NO_MERGE_WITH_LEFT_ENTITY;
+
+        // We push the right entity to the saved_entities and the left_entity back to teh stack, because the left_entity might be able to merge with the next entity, so we need to try again
+        vector_push(saved_entities,rightentity);
+        resolver_result_entity_push(result,left_entity);
+
+    }
+    resolver_push_vector_of_entities(result,saved_entities);
+    vector_free(saved_entities);
+}
+
 void resolver_merge_compile_times(struct resolver_process* resolver, struct resolver_result* result)
 {
-
+    // Keep looping until we sure there is nothing more to merge (we are constantly pushing and popping from the stack, so false loop stops can happen)
+    size_t total_entities = 0;
+    do {
+        total_entities = result->count;
+        _resolver_merge_compile_times(resolver,result);
+    }while(total_entities != 1 && total_entities != result->count);
 }
 
 void resolver_finalize_result(struct resolver_process* resolver, struct resolver_result* result)
