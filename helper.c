@@ -264,6 +264,7 @@ void datatype_decrement_pointer(struct datatype* dtype)
     }
 }
 
+
 bool op_is_indirection(const char* op)
 {
     return S_EQ(op,"*");

@@ -1006,6 +1006,8 @@ bool datatype_is_struct_or_union_for_name(const char* name);
 bool datatype_is_primitive(struct datatype* dtype);
 struct node* node_create(struct node* _node);
 
+bool datatype_is_struct_or_union_non_pointer(struct datatype* dtype);
+
 struct node* node_from_sym(struct symbol* sym);
 
 struct node* node_from_symbol(struct compiler_process* current_process, const char* name);
