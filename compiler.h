@@ -14,6 +14,13 @@ struct pos
     const char *filename;
 };
 
+// In C we need to align the stack to 16 bytes
+#define C_STACK_ALIGNMENT 16
+
+// Because it's a 32 bit compiler
+#define STACK_PUSH_SIZE 4
+#define C_ALIGN(size) (size % C_STACK_ALIGNMENT) ? size+(C_STACK_ALIGNMENT - (size % C_STACK_ALIGNMENT)) : size
+
 #define NUMERIC_CASE \
     case '0':        \
     case '1':        \
@@ -205,6 +212,7 @@ struct code_generator
     struct vector* exit_points;
 
 };
+struct resolver_process;
 
 struct compiler_process
 {
@@ -241,6 +249,7 @@ struct compiler_process
 
     // Pointer to our code generator
     struct code_generator* generator;
+    struct resolver_process* resolver;
 };
 
 enum
@@ -995,6 +1004,11 @@ enum
 
 enum
 {
+    IS_ALONE_STATEMENT = 0b00000001
+};
+
+enum
+{
     STRUCT_ACCESS_BACKWARDS = 0b00000001,
     STRUCT_STOP_AT_POINTER_ACCESS = 0b00000010
 };
@@ -1185,6 +1199,44 @@ void symresolver_build_for_node(struct compiler_process* process, struct node* n
 struct symbol* symresolver_get_symbol(struct compiler_process* process, const char* name);
 struct symbol* symresolver_get_symbol_for_native_function(struct compiler_process* process, const char* name);
 size_t function_node_argument_stack_addition(struct node* node);
+bool function_node_is_prototype(struct node* node);
+struct vector* function_node_argument_vec(struct node* node);
+size_t function_node_stack_size(struct node* node);
+struct resolver_default_entity_data* resolver_default_entity_private(struct resolver_entity* entity);
+struct resolver_default_scope_data* resolver_default_scope(struct resolver_scope* scope);
+char* resolver_default_stack_asm_address(int stack_offset, char* out);
+
+struct resolver_default_entity_data* resolver_default_new_entity_data();
+
+void resolver_default_global_asm_address(const char* name, int offset, char* address_out);
+
+void resolver_default_entity_data_set_address(struct resolver_default_entity_data* entity_data, struct node* var_node, int offset, int flags);
+
+void*  resolver_default_make_private(struct resolver_entity* entity,struct node* node, int offset, struct resolver_scope* scope);
+
+void resolver_default_set_result_base(struct resolver_result* result, struct resolver_entity* base_entity);
+struct resolver_default_entity_data* resolver_default_new_entity_data_for_var_node(struct node* var_node, int offset, int flags);
+struct resolver_default_entity_data* resolver_default_new_entity_data_for_array_bracket(struct node* bracket_node);
+struct resolver_default_entity_data* resolver_default_new_entity_data_for_function(struct node* function_node, int flags);
+
+struct resolver_entity* resolver_default_new_scope_entity(struct resolver_process* resolver, struct node* var_node, int offset,int flags);
+
+struct resolver_entity* resolver_default_register_function(struct resolver_process* resolver, struct node* func_node, int flags);
+void resolver_default_new_scope(struct resolver_process* resolver, int flags);
+
+void resolver_default_finish_scope(struct resolver_process* resolver);
+void* resolver_default_new_array_entity(struct resolver_result* result, struct node* array_entity_node);
+void resolver_default_delete_entity(struct resolver_entity* entity);
+
+void resolver_default_delete_scope(struct resolver_scope* scope);
+
+
+struct resolver_entity* resolver_default_merge_entities(struct resolver_process* resolver, struct resolver_result* result, struct resolver_entity* left_entity, struct resolver_entity* right_entity);
+
+struct resolver_process* resolver_default_new_process(struct compiler_process* compiler);
+
+
+
 struct scope* scope_current(struct compiler_process* process);
 
 void symresolver_initialize(struct compiler_process* process);
