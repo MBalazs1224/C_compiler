@@ -42,7 +42,7 @@ void resolver_default_global_asm_address(const char* name, int offset, char* add
     return;
 }
 
-void resolver_default_entity_data_set_address(struct resolver_default_entity_data* entity_data, struct node* var_node, int offset, int flags)
+        void resolver_default_entity_data_set_address(struct resolver_default_entity_data* entity_data, struct node* var_node, int offset, int flags)
 {
     if (!var_node)
     {

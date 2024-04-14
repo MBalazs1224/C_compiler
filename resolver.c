@@ -348,7 +348,7 @@ struct resolver_entity* resolver_create_new_cast_entity( struct resolver_process
 struct resolver_entity* resolver_create_new_entity_for_var_node_custom_scope( struct resolver_process* process,struct node* var_node, void* private,struct resolver_scope* scope,int offset)
 {
     assert(var_node->type == NODE_TYPE_VARIABLE);
-    struct resolver_entity* entity = resolver_create_new_entity(NULL,NODE_TYPE_VARIABLE,NULL);
+    struct resolver_entity* entity = resolver_create_new_entity(NULL,RESOLVER_ENTITY_TYPE_VARIABLE,private);
     if (!entity)
     {
         return NULL;
@@ -371,7 +371,7 @@ struct resolver_entity* resolver_create_new_entity_for_var_node( struct resolver
 
 struct resolver_entity* resolver_create_new_entity_for_var_node_no_push( struct resolver_process* process,struct node* var_node, void* private,int offset,struct resolver_scope* scope)
 {
-    struct resolver_entity* entity = resolver_create_new_entity(NULL,NODE_TYPE_VARIABLE,NULL);
+    struct resolver_entity* entity = resolver_create_new_entity_for_var_node_custom_scope(process, var_node, private, scope, offset);
     if (!entity)
     {
         return NULL;
@@ -383,7 +383,7 @@ struct resolver_entity* resolver_create_new_entity_for_var_node_no_push( struct 
     return entity;
 }
 
-struct resolver_entity* resolver_new_entity_for_var_node( struct resolver_process* process,struct node* var_node, void* private,int offset)
+struct resolver_entity*     resolver_new_entity_for_var_node( struct resolver_process* process,struct node* var_node, void* private,int offset)
 {
     struct resolver_entity* entity = resolver_create_new_entity_for_var_node_no_push(process,var_node,private,offset,
                                                                                      resolver_process_scope_current(process));
