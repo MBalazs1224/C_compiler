@@ -603,7 +603,7 @@ void codegen_generate_statement(struct node* node, struct history* history)
     }
 }
 
-void codegen_generate_scope_no_new_scope(struct vector* statements, struct hisotry*history)
+void codegen_generate_scope_no_new_scope(struct vector* statements, struct history*history)
 {
     vector_set_peek_pointer(statements,0);
     struct node* statement_node = vector_peek_ptr(statements);
