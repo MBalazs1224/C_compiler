@@ -1165,6 +1165,10 @@ struct resolver_entity* resolver_register_function(struct resolver_process*proce
 struct resolver_scope* resolver_new_scope_create();
 void resolver_finish_scope(struct resolver_process* resolver);
 struct resolver_scope* resolver_new_scope(struct resolver_process* resolver, void* private ,int flags);
+struct resolver_result* resolver_follow(struct resolver_process* resolver, struct node* node);
+bool resolver_result_ok(struct resolver_result*result);
+struct resolver_entity* resolver_result_entity_root(struct resolver_result* result);
+struct resolver_entity* resolver_result_entity_next(struct resolver_entity* entity);
 
 bool node_is_expression(struct node* node,const char* op);
 bool node_valid(struct node* node);
