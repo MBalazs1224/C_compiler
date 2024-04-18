@@ -5,7 +5,82 @@
 #include <assert.h>
 static struct compiler_process* current_process = NULL;
 static struct node* current_function = NULL;
+void codegen_generate_exp_node(struct node* node, struct history*history);
 int codegen_label_count();
+
+
+enum
+{
+    RESPONSE_FLAG_ACKNOWLEDGED = 0b00000001,
+    RESPONSE_FLAG_PUSHED_STRUCT = 0b00000010,
+    RESPONSE_FLAG_RESOLVED_ENTITY = 0b00000100,
+    RESPONSE_FLAG_UNARY_GET_ADDRESS = 0b00001000
+};
+
+#define RESPONSE_SET(x) &(struct response{x};)
+#define RESPONSE_EMPTY_RESPONSE_SET()
+
+struct response_data
+{
+    union
+    {
+        struct resolver_entity* resolved_entity;
+    };
+};
+
+struct response
+{
+    int flags;
+    struct response_data* data;
+};
+
+void codegen_response_expect()
+{
+    // Whenever someone expects a response, first we put an empty response to the stack
+    struct response* res = calloc(1,sizeof (struct response));
+    vector_push(current_process->generator->responses,&res);
+}
+
+struct response_data* codegen_response_data(struct response* response)
+{
+    return &response->data;
+}
+
+struct response* codegen_response_pull()
+{
+    // Get the last response in the vector
+    struct response* res = vector_back_ptr_or_null(current_process->generator->responses);
+    if (res)
+    {
+        vector_pop(current_process->generator->responses);
+    }
+    return res;
+
+}
+
+void codegen_response_acknowledge(struct response* response_in)
+{
+    struct response* res = vector_back_ptr_or_null(current_process->generator->responses);
+    if (res)
+    {
+        res->flags |= response_in->flags;
+        if (response_in->data->resolved_entity)
+        {
+            res->data->resolved_entity = response_in->data->resolved_entity;
+        }
+        res->flags |= RESPONSE_FLAG_ACKNOWLEDGED;
+    }
+}
+
+bool codegen_response_acknowledged(struct response* res)
+{
+    return res && res->flags & RESPONSE_FLAG_ACKNOWLEDGED;
+}
+
+bool codegen_response_has_entity(struct response* res)
+{
+    return codegen_response_acknowledged(res) && res->flags & RESPONSE_FLAG_RESOLVED_ENTITY && res->data->resolved_entity;
+}
 
 struct history
 {
@@ -210,7 +285,8 @@ struct code_generator* codegenerator_new(struct compiler_process* process)
     generator->string_table = vector_create(sizeof(struct string_table_element*));
     generator->entry_points = vector_create(sizeof(struct codegen_entry_point*));
     generator->exit_points = vector_create(sizeof(struct codegen_exit_point*));
-    return  generator;
+    generator->responses = vector_create(sizeof(struct response*));
+    return generator;
 }
 
 void codegen_register_exit_point(int exit_point_id)
@@ -457,6 +533,9 @@ void codegen_generate_expressionable(struct node* node, struct history* history)
     switch (node->type) {
         case NODE_TYPE_NUMBER:
             codegen_generate_number_node(node,history);
+            break;
+        case NODE_TYPE_EXPRESSION:
+            codegen_generate_exp_node();
             break;
     }
 }
@@ -755,12 +834,372 @@ void codegen_generate_assignment_expression(struct node* node, struct history*hi
     // Generate the x part of x = 50
     codegen_generate_assignment_part(node->exp.left, node->exp.op,history);
 }
+
+void codegen_generate_entity_access_for_entity(struct resolver_result* result, struct resolver_entity* entity, struct history* history)
+{
+    switch (entity->type) {
+        case RESOLVER_ENTITY_TYPE_ARRAY_BRACKET:
+#warning "Implement array brackets"
+            break;
+        case RESOLVER_ENTITY_TYPE_VARIABLE:
+        case RESOLVER_ENTITY_TYPE_GENERAL:
+            codegen_generate_entity_access_for_variable_or_general(result, entity);
+            break;
+        case RESOLVER_ENTITY_TYPE_FUNCTION_CALL:
+#warning "Implement function call"
+            break;
+        case RESOLVER_ENTITY_TYPE_UNARY_INDIRECTION:
+#warning "Implement unary indirection"
+            break;
+        case RESOLVER_ENTITY_TYPE_UNARY_GET_ADDRESS:
+#warning "Implement unary get address"
+            break;
+        case RESOLVER_ENTITY_TYPE_UNSUPPORTED:
+#warning "Implement unsupported"
+            break;
+        case RESOLVER_ENTITY_TYPE_CAST:
+#warning "Implement cast"
+            break;
+        default:
+            compiler_error(current_process, "COMPILER BUG");
+    }
+}
+
+void codegen_generate_entity_access(struct resolver_result*result, struct resolver_entity* root_assignment_entity, struct  node* top_most_node, struct history*history)
+{
+    codegen_generate_entity_access_start(result,root_assignment_entity,history);
+    struct resolver_entity*current = resolver_result_entity_next(root_assignment_entity);
+    while (current)
+    {
+        codegen_generate_entity_access_for_entity(result,current,history);
+        current = resolver_result_entity_next(current);
+    }
+}
+
+bool codegen_resolve_node_return_result(struct node* node, struct history* history, struct resolver_result** result_out)
+{
+    struct resolver_result* result = resolver_follow(current_process->resolver,node);
+    if (resolver_result_ok(result))
+    {
+        struct resolver_entity* root_assignment_entity = resolver_result_entity_root(result);
+        codegen_generate_entity_access(result,root_assignment_entity,node,history);
+        if (result_out)
+        {
+            *result_out = result;
+        }
+        codegen_response_acknowledge(&(struct response){.flags = RESPONSE_FLAG_RESOLVED_ENTITY,.data.resolved_entity = result->last_entity});
+        return true;
+    }
+    return false;
+}
+
+void codegen_resolve_node_for_value(struct node* node, struct history* history)
+{
+    struct resolver_result* result = NULL;
+    if (!codegen_resolve_node_return_result(node,history,&result))
+    {
+
+    }
+}
+
+int get_additional_flags(int current_flags, struct node* node)
+{
+    if (node->type != NODE_TYPE_EXPRESSION)
+    {
+        return 0;
+    }
+
+    int additional_flags = 0;
+    bool maintain__function_call_argument_flag = (current_flags & EXPRESSION_IN_FUNCTION_CALL_ARGUMENTS) && S_EQ(node->exp.op,",");
+    if (maintain__function_call_argument_flag)
+    {
+        additional_flags |= EXPRESSION_IN_FUNCTION_CALL_ARGUMENTS;
+    }
+    return additional_flags;
+}
+
+int codegen_set_flag_for_operator(const char* op)
+{
+    int flag = 0;
+    if (S_EQ(op,"+"))
+    {
+        flag |= EXPRESSION_IS_ADDITION;
+    }
+    else if (S_EQ(op,"-"))
+    {
+        flag |= EXPRESSION_IS_SUBTRACTION;
+    }
+    else if (S_EQ(op,"*"))
+    {
+        flag |= EXPRESSION_IS_MULTIPLICATION;
+    }
+    else if (S_EQ(op,"/"))
+    {
+        flag |= EXPRESSION_IS_DIVISION;
+    }
+    else if (S_EQ(op,"%"))
+    {
+        flag |= EXPRESSION_IS_MODULUS;
+    }
+    else if (S_EQ(op,">"))
+    {
+        flag |= EXPRESSION_IS_ABOVE;
+    }
+    else if (S_EQ(op,"<"))
+    {
+        flag |= EXPRESSION_IS_BELOW;
+    }
+    else if (S_EQ(op,">="))
+    {
+        flag |= EXPRESSION_IS_ABOVE_OR_EQUAL;
+    }
+    else if (S_EQ(op,"<="))
+    {
+        flag |= EXPRESSION_IS_BELOW_OR_EQUAL;
+    }
+    else if (S_EQ(op,"!="))
+    {
+        flag |= EXPRESSION_IS_NOT_EQUAL;
+    }
+    else if (S_EQ(op,"=="))
+    {
+        flag |= EXPRESSION_IS_EQUAL;
+    }
+    else if (S_EQ(op,"&&"))
+    {
+        flag |= EXPRESSION_IS_LOGICAL_AND;
+    }
+    else if (S_EQ(op,"<<"))
+    {
+        flag |= EXPRESSION_IS_BITSHIFT_LEFT;
+    }
+    else if (S_EQ(op,">>"))
+    {
+        flag |= EXPRESSION_IS_BITSHIFT_RIGHT;
+    }
+    else if (S_EQ(op,"&"))
+    {
+        flag |= EXPRESSION_IS_BITWISE_AND;
+    }
+    else if (S_EQ(op,"|"))
+    {
+        flag |= EXPRESSION_IS_BITWISE_OR;
+    }
+    else if (S_EQ(op,"^"))
+    {
+        flag |= EXPRESSION_IS_BITWISE_XOR;
+    }
+    return flag;
+}
+
+struct stack_frame_element* asm_stack_back()
+{
+    return stackframe_back(current_function);
+}
+
+struct stack_frame_element* asm_stack_peek()
+{
+    return stackframe_peek(current_function);
+}
+
+void asm_stack_peek_start()
+{
+    stackframe_peek_start(current_function);
+}
+
+bool asm_datatype_back(struct datatype* dtype_out)
+{
+    // If it can find the passed in datatype it returns true, otherwise false
+    struct stack_frame_element* last_stack_frame_element = asm_stack_back();
+
+    if (!last_stack_frame_element)
+    {
+        return false;
+    }
+
+    if (!(last_stack_frame_element->flags & STACK_FRAME_ELEMENT_FLAG_HAS_DATATYPE))
+    {
+        return false;
+    }
+    *dtype_out = last_stack_frame_element->data.dtype;
+    return true;
+}
+
+bool codegen_can_gen_math(int flags)
+{
+    return flags & EXPRESSION_GEN_MATHABLE;
+}
+
+void codegen_gen_cmp(const char* value, const char* set_ins)
+{
+    // Compare the value to the eax reg and store the result back into eax (0 extended)
+
+
+    asm_push("cmp eax, %s",value);
+    asm_push("% al",set_ins);
+    asm_push("movzx eax,al");
+}
+
+void codegen_gen_math_for_value(const char* reg, const char*value, int flags, bool is_signed)
+{
+    if (flags & EXPRESSION_IS_ADDITION)
+    {
+        asm_push("add %s, %s",reg,value);
+    }
+    else if (flags & EXPRESSION_IS_SUBTRACTION)
+    {
+        asm_push("sub %s, %s",reg,value);
+    }
+    else if (flags & EXPRESSION_IS_MULTIPLICATION)
+    {
+        asm_push("mov ecx, %s",value);
+        if (is_signed)
+        {
+            asm_push("imul ecx");
+        }
+        else
+        {
+            asm_push("mul ecx");
+        }
+    }
+    // In division the value will be stored in eax and the remainder will be stored in edx
+    else if (flags & EXPRESSION_IS_DIVISION)
+    {
+        asm_push("mov ecx, %s",value);
+        asm_push("cdq");
+        if (is_signed)
+        {
+            asm_push("idiv ecx");
+        }
+        else
+        {
+            asm_push("div ecx");
+        }
+    }
+    else if (flags & EXPRESSION_IS_MODULUS)
+    {
+        asm_push("mov ecx, %s",value);
+        asm_push("cdq");
+        if (is_signed)
+        {
+            asm_push("idiv ecx");
+        }
+        else
+        {
+            asm_push("div ecx");
+        }
+        // Move the remainder to eax
+        asm_push("mov eax,edx");
+    }
+    else if (flags & EXPRESSION_IS_ABOVE)
+    {
+        // setg -> set if greater, so the result will only be moved to the al (then to eax) if the value is greater, setl -> set if lower etc.
+        codegen_gen_cmp(value,"setg");
+    }
+    else if (flags & EXPRESSION_IS_BELOW)
+    {
+        codegen_gen_cmp(value,"setl");
+    }
+    else if (flags & EXPRESSION_IS_EQUAL)
+    {
+        codegen_gen_cmp(value,"sete");
+    }
+    else if (flags & EXPRESSION_IS_ABOVE_OR_EQUAL)
+    {
+        codegen_gen_cmp(value,"setge");
+    }
+    else if (flags & EXPRESSION_IS_BELOW_OR_EQUAL)
+    {
+        codegen_gen_cmp(value,"setle");
+    }
+    else if (flags & EXPRESSION_IS_NOT_EQUAL)
+    {
+        codegen_gen_cmp(value,"setne");
+    }
+    else if(flags & EXPRESSION_IS_BITSHIFT_LEFT)
+    {
+        value = codegen_sub_register(value, DATA_SIZE_BYTE);
+        // sal eax, 5 -> shift left eax reg by 5 and store the result back in eax
+        asm_push("sal %s, %s",reg,value);
+    }
+    else if(flags & EXPRESSION_IS_BITSHIFT_RIGHT)
+    {
+        value = codegen_sub_register(value, DATA_SIZE_BYTE);
+        // sar eax, 5 -> shift right eax reg by 5 and store the result back in eax
+        asm_push("sar %s, %s",reg,value);
+    }
+    else if (flags & EXPRESSION_IS_BITWISE_AND)
+    {
+        asm_push("and %s,%s", reg,value);
+    }
+    else if (flags & EXPRESSION_IS_BITWISE_OR)
+    {
+        asm_push("or %s,%s", reg,value);
+    }
+    else if (flags & EXPRESSION_IS_BITWISE_XOR)
+    {
+        asm_push("xor %s,%s", reg,value);
+    }
+
+}
+
+void codegen_generate_exp_node_for_arithmetic(struct node* node, struct history* history)
+{
+    assert(node->type == NODE_TYPE_EXPRESSION);
+    int flags = history->flags;
+
+    //if (is_logical_operator(node->exp.op))
+    //{
+    //  codegen_generate_exp_node_for_logical_arithmetic();
+    //}
+
+    struct node*left_node = node->exp.left;
+    struct node* right_node = node->exp.right;
+    int op_flags = codegen_set_flag_for_operator(node->exp.op);
+
+    codegen_generate_expressionable(left_node, history_down(flags));
+    codegen_generate_expressionable(right_node, history_down(flags));
+
+    struct datatype last_dtype = datatype_for_numeric();
+
+    asm_datatype_back(&last_dtype);
+
+    if (codegen_can_gen_math(op_flags))
+    {
+        struct datatype right_dtype = datatype_for_numeric();
+        asm_datatype_back(&right_dtype);
+        asm_push_ins_pop("ecx",STACK_FRAME_ELEMENT_TYPE_PUSHED_VALUE,"result_value");
+        if (last_dtype.flags & DATATYPE_FLAG_IS_LITERAL)
+        {
+            asm_datatype_back(&last_dtype);
+        }
+
+        struct datatype left_dtype = datatype_for_numeric();
+        asm_datatype_back(&left_dtype);
+        asm_push_ins_pop("eax",STACK_FRAME_ELEMENT_TYPE_PUSHED_VALUE,"result_value");
+#warning "Generate pointer stuff"
+        codegen_gen_math_for_value("eax","ecx",op_flags,last_dtype.flags & DATATYPE_FLAG_IS_SIGNED);
+    }
+    asm_push_ins_push_with_data("eax",STACK_FRAME_ELEMENT_TYPE_PUSHED_VALUE,"result_value",0,&(struct stack_frame_data){.dtype = last_dtype});
+}
+
 void codegen_generate_exp_node(struct node* node, struct history*history)
 {
     if (is_node_assignment(node))
     {
         codegen_generate_assignment_expression(node,history);
+        return;
     }
+    // Can we locate a variable for the given expression
+    if (codegen_resolve_node_for_value(node,history))
+    {
+        return;
+    }
+
+    // If it's not assignment and we cannot resolve the node through the resolver then it must be arithmetic i.e. 5 + 10, a + b
+
+    int additional_flags = get_additional_flags(history->flags,node);
+    codegen_generate_exp_node_for_arithmetic();
 }
 
 void codegen_generate_statement(struct node* node, struct history* history)

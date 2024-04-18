@@ -204,12 +204,15 @@ struct string_table_element
 
 struct code_generator
 {
-    // vector of struct string_table_elements
+    // vector of struct string_table_elements*
     struct vector* string_table;
-    // vector of struct codegen_entry_point
+    // vector of struct codegen_entry_point*
     struct vector* entry_points;
-    // vector of struct codegen_exit_point
+    // vector of struct codegen_exit_point*
     struct vector* exit_points;
+
+    // vector of struct response*
+    struct vector* responses;
 
 };
 struct resolver_process;
@@ -1038,6 +1041,30 @@ enum
     EXPRESSION_IS_MODULUS = 0b10000000000000000000000000000000
 
 };
+
+#define EXPRESSION_GEN_MATHABLE( \
+    EXRESSION_IS_ADDITION |      \
+    EXPRESSION_IS_SUBTRACTION |  \
+    EXPRESSION_IS_MULTILICATION |\
+    EXPRESSION_IS_DIVISION |\
+    EXPRESSION_IS_FUNCTION_CALL |\
+    EXPRESSION_IS_MODULUS |\
+    EXPRESSION_INDIRECTION |\
+    EXPRESSION_GET_ADDRESS |\
+    EXPRESSION_IS_ABOVE |\
+    EXPRESSION_IS_ABOVE_OR_EQUAL |\
+    EXPRESSION_IS_BELOW_OR_EQUAL |\
+    EXPRESSION_IS_BELOW |\
+    EXPRESSION_IS_EQUAL |\
+    EXPRESSION_IS_NOT_EQUAL |\
+    EXPRESSION_IS_LOGICAL_AND |\
+    EXPRESSION_IS_LOGICAL_OR |\
+    EXPRESSION_IS_IN_LOGICAL_EXPRESSION |\
+    EXPRESSION_IS_BITSHIFT_LEFT |\
+    EXPRESSION_IS_BITSHIFT_RIGHT \
+    EXPRESSION_IS_BITWISE_OR \
+    EXPRESSION_IS_BITWISE_AND \
+    EXPRESSION_IS_BITWISE_XOR)
 
 enum
 {
