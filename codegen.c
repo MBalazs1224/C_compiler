@@ -5,6 +5,12 @@
 #include <assert.h>
 static struct compiler_process* current_process = NULL;
 static struct node* current_function = NULL;
+
+struct history
+{
+    int flags;
+};
+
 void codegen_generate_exp_node(struct node* node, struct history*history);
 int codegen_label_count();
 
@@ -31,7 +37,7 @@ struct response_data
 struct response
 {
     int flags;
-    struct response_data* data;
+    struct response_data data;
 };
 
 void codegen_response_expect()
@@ -64,9 +70,9 @@ void codegen_response_acknowledge(struct response* response_in)
     if (res)
     {
         res->flags |= response_in->flags;
-        if (response_in->data->resolved_entity)
+        if (response_in->data.resolved_entity)
         {
-            res->data->resolved_entity = response_in->data->resolved_entity;
+            res->data.resolved_entity = response_in->data.resolved_entity;
         }
         res->flags |= RESPONSE_FLAG_ACKNOWLEDGED;
     }
@@ -79,13 +85,8 @@ bool codegen_response_acknowledged(struct response* res)
 
 bool codegen_response_has_entity(struct response* res)
 {
-    return codegen_response_acknowledged(res) && res->flags & RESPONSE_FLAG_RESOLVED_ENTITY && res->data->resolved_entity;
+    return codegen_response_acknowledged(res) && res->flags & RESPONSE_FLAG_RESOLVED_ENTITY && res->data.resolved_entity;
 }
-
-struct history
-{
-    int flags;
-};
 
 static struct history* history_begin(int flags)
 {
@@ -535,7 +536,7 @@ void codegen_generate_expressionable(struct node* node, struct history* history)
             codegen_generate_number_node(node,history);
             break;
         case NODE_TYPE_EXPRESSION:
-            codegen_generate_exp_node();
+            codegen_generate_exp_node(node,history);
             break;
     }
 }
@@ -893,13 +894,15 @@ bool codegen_resolve_node_return_result(struct node* node, struct history* histo
     return false;
 }
 
-void codegen_resolve_node_for_value(struct node* node, struct history* history)
+bool codegen_resolve_node_for_value(struct node* node, struct history* history)
 {
     struct resolver_result* result = NULL;
     if (!codegen_resolve_node_return_result(node,history,&result))
     {
-
+        return false;
     }
+#warning "MORE TO GO FOR RESOLVING NODE VALUE"
+    return true;
 }
 
 int get_additional_flags(int current_flags, struct node* node)
@@ -967,7 +970,7 @@ int codegen_set_flag_for_operator(const char* op)
     }
     else if (S_EQ(op,"&&"))
     {
-        flag |= EXPRESSION_IS_LOGICAL_AND;
+        flag |= EXPRESSION_LOGICAL_AND;
     }
     else if (S_EQ(op,"<<"))
     {
@@ -1145,6 +1148,7 @@ void codegen_gen_math_for_value(const char* reg, const char*value, int flags, bo
 
 void codegen_generate_exp_node_for_arithmetic(struct node* node, struct history* history)
 {
+
     assert(node->type == NODE_TYPE_EXPRESSION);
     int flags = history->flags;
 
@@ -1157,17 +1161,22 @@ void codegen_generate_exp_node_for_arithmetic(struct node* node, struct history*
     struct node* right_node = node->exp.right;
     int op_flags = codegen_set_flag_for_operator(node->exp.op);
 
-    codegen_generate_expressionable(left_node, history_down(flags));
-    codegen_generate_expressionable(right_node, history_down(flags));
+    codegen_generate_expressionable(left_node, history_down(history,flags));
+    codegen_generate_expressionable(right_node, history_down(history,flags));
 
+    //Get the last numeric type
     struct datatype last_dtype = datatype_for_numeric();
 
     asm_datatype_back(&last_dtype);
 
     if (codegen_can_gen_math(op_flags))
     {
+        // At this point we have the two operands on the stack
+
         struct datatype right_dtype = datatype_for_numeric();
         asm_datatype_back(&right_dtype);
+
+        // Pop the first operand into ecx
         asm_push_ins_pop("ecx",STACK_FRAME_ELEMENT_TYPE_PUSHED_VALUE,"result_value");
         if (last_dtype.flags & DATATYPE_FLAG_IS_LITERAL)
         {
@@ -1176,11 +1185,21 @@ void codegen_generate_exp_node_for_arithmetic(struct node* node, struct history*
 
         struct datatype left_dtype = datatype_for_numeric();
         asm_datatype_back(&left_dtype);
+
+        // Pop the second operand into eax
         asm_push_ins_pop("eax",STACK_FRAME_ELEMENT_TYPE_PUSHED_VALUE,"result_value");
 #warning "Generate pointer stuff"
+
+        // Generate the proper arithmetic instruction with eax and ecx as it's operands
         codegen_gen_math_for_value("eax","ecx",op_flags,last_dtype.flags & DATATYPE_FLAG_IS_SIGNED);
     }
+    // Push eax (the final value of the arithmetic) to the stack
     asm_push_ins_push_with_data("eax",STACK_FRAME_ELEMENT_TYPE_PUSHED_VALUE,"result_value",0,&(struct stack_frame_data){.dtype = last_dtype});
+}
+
+int codegen_remove_uninheritable_flags(int flags)
+{
+    return flags & ~EXPRESSION_UNINHERITABLE_FLAGS;
 }
 
 void codegen_generate_exp_node(struct node* node, struct history*history)
@@ -1199,7 +1218,7 @@ void codegen_generate_exp_node(struct node* node, struct history*history)
     // If it's not assignment and we cannot resolve the node through the resolver then it must be arithmetic i.e. 5 + 10, a + b
 
     int additional_flags = get_additional_flags(history->flags,node);
-    codegen_generate_exp_node_for_arithmetic();
+    codegen_generate_exp_node_for_arithmetic(node, history_down(history,codegen_remove_uninheritable_flags(history->flags) | additional_flags));
 }
 
 void codegen_generate_statement(struct node* node, struct history* history)
