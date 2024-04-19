@@ -7,6 +7,16 @@ size_t variable_size(struct node* var_node)
     return datatype_size(&var_node->var.type);
 }
 
+bool is_logical_node(struct node* node)
+{
+    return node->type == NODE_TYPE_EXPRESSION && is_logical_operator(node->exp.op);
+}
+
+bool is_logical_operator(const char*op)
+{
+    return S_EQ(op,"&&") || S_EQ(op,"||");
+}
+
 struct datatype* datatype_pointer_reduce(struct datatype* datatype, int by)
 {
     // Reduces the pointer depth of a datatype -> int** becomes int*
