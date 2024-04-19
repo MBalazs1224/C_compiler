@@ -1248,7 +1248,18 @@ void codegen_generate_exp_node_for_arithmetic(struct node* node, struct history*
 
         // Pop the second operand into eax
         asm_push_ins_pop("eax",STACK_FRAME_ELEMENT_TYPE_PUSHED_VALUE,"result_value");
-#warning "Generate pointer stuff"
+
+        struct datatype* pointer_datatype = datatype_thats_a_pointer(&left_dtype,&right_dtype);
+        if (pointer_datatype && datatype_size(datatype_pointer_reduce(pointer_datatype,1))  > DATA_SIZE_BYTE)
+        {
+            const char*reg = "ecx";
+            if (pointer_datatype == &right_dtype)
+            {
+                reg = "eax";
+            }
+            // int* a; a + 1 -> without this it would increment int by 1 even tough it should be incremented by 4 because we want to get to the next element
+            asm_push("imul %s, %i", reg,datatype_size(datatype_pointer_reduce(pointer_datatype,1)));
+        }
 
         // Generate the proper arithmetic instruction with eax and ecx as it's operands
         codegen_gen_math_for_value("eax","ecx",op_flags,last_dtype.flags & DATATYPE_FLAG_IS_SIGNED);

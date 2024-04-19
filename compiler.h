@@ -1231,7 +1231,8 @@ size_t array_brackets_calculate_size(struct datatype* dtype, struct array_bracke
 int array_total_indexes(struct datatype* dtype);
 
 bool datatype_is_struct_or_union(struct datatype* dtype);
-
+struct datatype* datatype_thats_a_pointer(struct datatype* d1, struct datatype* d2);
+struct datatype* datatype_pointer_reduce(struct datatype* datatype, int by);
 // Gets the variable size from the given variable node
 size_t variable_size(struct node* var_node);
 // Sums all the variable size of all variable nodes inside the variable list node, returns the sum
