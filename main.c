@@ -37,27 +37,27 @@ int main(int argc, char** argv)
         printf("Unkonw errors\n");
     }
 
-    if (compile_flags & COMPILE_PROCESS_EXECUTE_NASM)
-    {
-        char nasm_output_file[40];
-        char nasm_cmd[512];
-        sprintf(nasm_output_file,"%s.o",output_file);
-        if (compile_flags & COMPILE_PROCESS_EXPORT_AS_OBJECT)
-        {
-            sprintf(nasm_cmd, "nasm -f elf32 %s -o %s", output_file,nasm_output_file);
-        }
-        else
-        {
-            sprintf(nasm_cmd, "nasm -f elf32 %s -o %s && gcc_nasm -m32 %s -o %s", output_file,nasm_output_file,nasm_output_file,output_file);
-        }
-
-        printf("%s",nasm_cmd);
-        int res = system(nasm_cmd);
-        if (res < 0)
-        {
-            printf("Issue assembling the assembly file and linking with gcc");
-            return res;
-        }
-    }
+//    if (compile_flags & COMPILE_PROCESS_EXECUTE_NASM)
+//    {
+//        char nasm_output_file[40];
+//        char nasm_cmd[512];
+//        sprintf(nasm_output_file,"%s.o",output_file);
+//        if (compile_flags & COMPILE_PROCESS_EXPORT_AS_OBJECT)
+//        {
+//            sprintf(nasm_cmd, "nasm -f elf32 %s -o %s", output_file,nasm_output_file);
+//        }
+//        else
+//        {
+//            sprintf(nasm_cmd, "nasm -f elf32 %s -o %s && gcc_nasm -m32 %s -o %s", output_file,nasm_output_file,nasm_output_file,output_file);
+//        }
+//
+//        printf("%s",nasm_cmd);
+//        int res = system(nasm_cmd);
+//        if (res < 0)
+//        {
+//            printf("Issue assembling the assembly file and linking with gcc");
+//            return res;
+//        }
+//    }
     return 0;
 }

@@ -1208,7 +1208,7 @@ struct resolver_result* resolver_follow(struct resolver_process* resolver, struc
 bool resolver_result_ok(struct resolver_result*result);
 struct resolver_entity* resolver_result_entity_root(struct resolver_result* result);
 struct resolver_entity* resolver_result_entity_next(struct resolver_entity* entity);
-
+struct resolver_entity* resolver_result_entity(struct resolver_result*result);
 bool node_is_expression(struct node* node,const char* op);
 bool node_valid(struct node* node);
 bool is_array_node(struct node* node);
