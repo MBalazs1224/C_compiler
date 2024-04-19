@@ -1085,6 +1085,12 @@ enum
 
 };
 
+enum
+{
+    COMPILE_PROCESS_EXECUTE_NASM = 0b00000001,
+    COMPILE_PROCESS_EXPORT_AS_OBJECT = 0b00000010,
+};
+
 
 int compile_file(const char *filename, const char *out_filename, int flags);
 

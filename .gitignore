@@ -4,3 +4,5 @@
 *.exe
 main
 test1.c
+test
+*.o

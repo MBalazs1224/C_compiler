@@ -1000,7 +1000,7 @@ void parser_scope_offset_for_stack(struct node* node, struct history* history)
     variable_node(node)->var.aoffset = offset + (upward_stack ? variable_node(node)->var.padding : -variable_node(node)->var.padding);
 }
 //Global variables are not on the stack so they don't have offsets they only have an adress in the memory
-void parser_scope_offset_for_global(struct node* node, struct history*)
+void parser_scope_offset_for_global(struct node* node, struct history* history)
 {
 
 }
