@@ -1049,20 +1049,20 @@ void _resolver_merge_compile_times(struct resolver_process* resolver, struct res
     struct vector* saved_entities = vector_create(sizeof(struct resolver_entity*));
     while (true)
     {
-        struct resolver_entity* rightentity = resolver_result_pop(result);
+        struct resolver_entity* right_entity = resolver_result_pop(result);
         struct resolver_entity* left_entity = resolver_result_pop(result);
         // If we don't have 2 entities than we cannot merge (if we don't have the right entity it means we had none)
-        if (!rightentity)
+        if (!right_entity)
         {
             break;
         }
         if (!left_entity)
         {
             // We only have on entity
-            resolver_result_entity_push(result,rightentity);
+            resolver_result_entity_push(result,right_entity);
             break;
         }
-        struct resolver_entity* merged_entity = resolver_merge_compile_time_result(resolver,result,left_entity,rightentity);
+        struct resolver_entity* merged_entity = resolver_merge_compile_time_result(resolver,result,left_entity,right_entity);
 
         // If the merge was successful push it back to the stack so the merging can continue using this now merged entity
         if (merged_entity)
@@ -1072,10 +1072,10 @@ void _resolver_merge_compile_times(struct resolver_process* resolver, struct res
         }
 
         // If the merged_entity returned null it means that the merge wasn't possible (maybe incompatible types etc.), so we need to set the no merge flag to prevent it trying to merge again
-        rightentity->flags |= RESOLVER_ENTITY_FLAG_NO_MERGE_WITH_LEFT_ENTITY;
+        right_entity->flags |= RESOLVER_ENTITY_FLAG_NO_MERGE_WITH_LEFT_ENTITY;
 
         // We push the right entity to the saved_entities and the left_entity back to teh stack, because the left_entity might be able to merge with the next entity, so we need to try again
-        vector_push(saved_entities,rightentity);
+        vector_push(saved_entities,&right_entity);
         resolver_result_entity_push(result,left_entity);
 
     }
