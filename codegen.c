@@ -1030,6 +1030,11 @@ void codegen_generate_entity_access_for_unary_indirection_for_assignment_left_op
 	asm_push_ins_push_with_flags("ebx",STACK_FRAME_ELEMENT_TYPE_PUSHED_VALUE,"result_value",STACK_FRAME_ELEMENT_FLAG_IS_PUSHED_ADDRESS);
 }
 
+void codegen_generate_entity_access_for_unsupported(struct resolver_result* result, struct resolver_entity* entity)
+{
+    codegen_generate_expressionable(entity->node, history_begin(0));
+}
+
 void codegen_generate_entity_access_for_entity_assignment_left_operand(struct resolver_result *result,struct resolver_entity *entity, struct history *history)
 {
 	switch (entity->type)
@@ -1051,7 +1056,7 @@ void codegen_generate_entity_access_for_entity_assignment_left_operand(struct re
 			codegen_generate_entity_access_for_unary_get_address(result,entity);
 			break;
 		case RESOLVER_ENTITY_TYPE_UNSUPPORTED:
-#warning "Implement unsupported"
+            codegen_generate_entity_access_for_unsupported(result,entity);
 			break;
 		case RESOLVER_ENTITY_TYPE_CAST:
 #warning "Implement cast"
@@ -1202,7 +1207,7 @@ void codegen_generate_entity_access_for_unary_indirection(struct resolver_result
 	struct datatype operand_datatype;
 	assert(asm_datatype_back(&operand_datatype));
 	int flags = asm_push_ins_pop("ebx",STACK_FRAME_ELEMENT_TYPE_PUSHED_VALUE,"result_value");
-	int gen_entity_rules = codegen_entity_rules(result->last_entity,result);
+	int gen_entity_rules = codegen_entity_rules(result->last_entity,history);
 	int depth = entity->indirection.depth;
 	codegen_apply_unary_access(depth);
 	asm_push_ins_push_with_data("ebx",STACK_FRAME_ELEMENT_TYPE_PUSHED_VALUE,"result_value",STACK_FRAME_ELEMENT_FLAG_IS_PUSHED_ADDRESS,&(struct stack_frame_data){.dtype=operand_datatype});
@@ -1236,7 +1241,7 @@ void codegen_generate_entity_access_for_entity(struct resolver_result* result, s
 			codegen_generate_entity_access_for_unary_get_address(result,entity);
             break;
         case RESOLVER_ENTITY_TYPE_UNSUPPORTED:
-#warning "Implement unsupported"
+            codegen_generate_entity_access_for_unsupported(result,entity);
             break;
         case RESOLVER_ENTITY_TYPE_CAST:
 #warning "Implement cast"
