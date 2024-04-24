@@ -1021,7 +1021,7 @@ void codegen_apply_unary_access(int depth)
 void codegen_generate_entity_access_for_unary_indirection_for_assignment_left_operand(struct resolver_result* result, struct resolver_entity* entity, struct history* history)
 {
 	asm_push("; INDIRECTION");
-	int flags = asm_push_ins_pop("ebx",STACK_FRAME_ELEMENT_TYPE_PUSHED_VALUE,"resulet_value");
+	int flags = asm_push_ins_pop("ebx",STACK_FRAME_ELEMENT_TYPE_PUSHED_VALUE,"result_value");
 	int gen_entity_rules = codegen_entity_rules(result->last_entity,history);
 	
 	int depth  = entity->indirection.depth - 1;
