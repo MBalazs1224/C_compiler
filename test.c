@@ -2,11 +2,14 @@ struct dog
 {
     int a;
     int b;
+    int e;
+    char kk;
 };
 
-struct dog a;
+
 int main()
 {
-    int e;
-    e = a.b;
+    struct dog a;
+    struct dog b;
+    a = b;
 }

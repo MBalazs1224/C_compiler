@@ -29,7 +29,8 @@ struct history
         struct history_exp exp;
     };
 };
-
+void codegen_generate_structure_push(struct resolver_entity* entity, struct history* history, int start_pos);
+void codegen_plus_or_minus_string_for_value(char* out, int val, size_t len);
 void codegen_generate_exp_node(struct node* node, struct history*history);
 const char*codegen_sub_register(const char* original_register, size_t size);
 void codegen_generate_entity_access_for_function_call(struct resolver_result *result, struct resolver_entity *entity);
@@ -170,6 +171,18 @@ void asm_push_ins_push_with_data(const char* fmt, int stack_entity_type, const c
     // Assert that we are in a function, because we work with stack and that's only possible in a  function
     assert(current_function);
     stackframe_push(current_function,&(struct stack_frame_element){.type=stack_entity_type,.name=stack_entity_name,.flags=flags,.data=*data});
+}
+
+void asm_push_ins_push_with_flags(const char* fmt, int stack_entity_type, const char*stack_entity_name, int flags,...)
+{
+    char tmp_buff[200];
+    sprintf(tmp_buff,"push %s",fmt);
+    va_list  args;
+    va_start(args,flags);
+    asm_push_args(tmp_buff,args);
+    va_end(args);
+    assert(current_function);
+    stackframe_push(current_function,&(struct stack_frame_element){.flags = flags,.type = stack_entity_type,.name = stack_entity_name});
 }
 
 void asm_push(const char* ins, ...)
@@ -591,11 +604,27 @@ void codegen_reduce_register(const char* reg, size_t size, bool is_signed)
     }
 }
 
+void codegen_gen_mem_access_get_address(struct node* node, int flags, struct resolver_entity* entity)
+{
+    asm_push("lea ebx, [%s]", codegen_entity_private(entity)->address);
+    asm_push_ins_push_with_flags("ebx",STACK_FRAME_ELEMENT_TYPE_PUSHED_VALUE,"result_value",STACK_FRAME_ELEMENT_FLAG_IS_PUSHED_ADDRESS);
+}
+
+void codegen_generate_structure_push_or_return(struct resolver_entity*entity, struct history* history, int start_pos)
+{
+    codegen_generate_structure_push(entity,history,start_pos);
+}
+
 void codegen_gen_mem_access(struct node* node, int flags, struct resolver_entity* entity)
 {
 #warning "generate address"
-#warning "generate struct non pointer access"
-    if (datatype_element_size(&entity->dtype) != DATA_SIZE_DWORD)
+    if (datatype_is_struct_or_union_non_pointer(&entity->dtype))
+    {
+        codegen_gen_mem_access_get_address(node,0,entity);
+        asm_push_ins_pop("ebx",STACK_FRAME_ELEMENT_TYPE_PUSHED_VALUE,"result_value");
+        codegen_generate_structure_push_or_return(entity, history_begin(0),0);
+    }
+    else if (datatype_element_size(&entity->dtype) != DATA_SIZE_DWORD)
     {
         // Move the value of the entity into eax
         asm_push("mov eax, [%s]", codegen_entity_private(entity)->address);
@@ -894,6 +923,19 @@ void codegen_generate_entity_access_for_assignment_left_operand(struct resolver_
     }
 }
 
+void codegen_generate_move_struct(struct datatype* dtype, const char* base_address,int offset)
+{
+    size_t structure_size = align_value(datatype_size(dtype),DATA_SIZE_DWORD);
+    int pops = structure_size / DATA_SIZE_DWORD;
+    for (int i = 0; i < pops; ++i) {
+        asm_push_ins_pop("eax",STACK_FRAME_ELEMENT_TYPE_PUSHED_VALUE,"result_value");
+        char fmt[10];
+        int chunk_offset = offset + (i * DATA_SIZE_DWORD);
+        codegen_plus_or_minus_string_for_value(fmt,chunk_offset, sizeof(fmt));
+        asm_push("mov [%s%s], eax",base_address,fmt);
+    }
+}
+
 void codegen_generate_assignment_part(struct node* node, const char* op, struct history* history)
 {
 
@@ -912,7 +954,7 @@ void codegen_generate_assignment_part(struct node* node, const char* op, struct 
     {
         if (datatype_is_struct_or_union_non_pointer(&result->last_entity->dtype))
         {
-#warning "Generate a move struct"
+            codegen_generate_move_struct(&result->last_entity->dtype,result->base.address,0);
         }
         else
         {
@@ -1532,7 +1574,7 @@ void codegen_generate_structure_push(struct resolver_entity* entity, struct hist
 
     // A stack can only store words so we need multiple pushes to store a struct
     int pushes = structure_size / DATA_SIZE_DWORD;
-    for (int i = pushes - 1; i >=start_pos; ++i) {
+    for (int i = pushes - 1; i >=start_pos; i--) {
         char fmt[10];
         int chunk_offset = (i * DATA_SIZE_DWORD);
         codegen_plus_or_minus_string_for_value(fmt,chunk_offset, sizeof(fmt));
