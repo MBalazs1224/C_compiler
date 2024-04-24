@@ -9,6 +9,10 @@
 static struct compiler_process* current_process = NULL;
 static struct node* current_function = NULL;
 
+void codegen_stack_add_no_compile_time_stack_frame_restore(size_t stack_size);
+
+void asm_pop_ebp_no_stack_frame_restore();
+
 
 enum
 {
@@ -1773,14 +1777,79 @@ void codegen_generate_structure_push(struct resolver_entity* entity, struct hist
     codegen_response_acknowledge(RESPONSE_SET(.flags = RESPONSE_FLAG_PUSHED_STRUCT));
 }
 
+void codegen_generate_statement_return_exp(struct node* node)
+{
+    codegen_response_expect();
+    // Push the return value to the stack
+    codegen_generate_expressionable(node->stmt.return_stmt.exp, history_begin(IS_STATEMENT_RETURN));
+    struct datatype dtype;
+    assert(asm_datatype_back(&dtype));
+    if (datatype_is_struct_or_union_non_pointer(&dtype))
+    {
+        /*
+         * struct dog get_dog()
+         * {
+         * struct dog d; -> because of the previous push eax instruction we can get the address of the d1 argument and change it directly to save some instructions (it will return d1's address in eax)
+         * d.e = 50;
+         * return d;
+         * }
+         *
+         * struct dog d1; -> in C it will push d1's address onto the stack so we can change it directly and don't waste memory in creating one object on the stack and then returning it (in asm it would look like get_dog() has an invisible argument). So it basically gets the d1 object in the stack, modifies it then returns it's address instead of creating a new one and returning that one
+         * d1 = get_dog();
+         *
+         * This is the way C does it, but we will replace it with a basic struct move for convenience
+         */
+        asm_push("move edx, [ebp+8]");
+        codegen_generate_move_struct(&dtype,"edx",0);
+        asm_push("mov eax, [ebp+8]");
+        return;
+    }
+
+    // Pop the return value into eax
+    asm_push_ins_pop("eax",STACK_FRAME_ELEMENT_TYPE_PUSHED_VALUE,"result_value");
+
+}
+
+void codegen_stack_add_no_compile_time_stack_frame_restore(size_t stack_size)
+{
+    if (stack_size != 0)
+    {
+        asm_push("add esp, %lld",stack_size);
+    }
+}
+
+void asm_pop_ebp_no_stack_frame_restore()
+{
+    asm_push("pop ebp");
+}
+
+void codegen_generate_statement_return(struct node* node)
+{
+    if (node->stmt.return_stmt.exp)
+    {
+        codegen_generate_statement_return_exp(node);
+    }
+
+    // Restore the stack pointer -> for our local variables we allocate space ((int a; int b;) -> sub esp,16) but later on we have to restore it (add esp,16) so nothing bad happens
+    codegen_stack_add_no_compile_time_stack_frame_restore(C_ALIGN(function_node_stack_size(node->binded.function)));
+    asm_pop_ebp_no_stack_frame_restore();
+    asm_push("ret");
+}
+
 void codegen_generate_statement(struct node* node, struct history* history)
 {
     switch (node->type) {
         case NODE_TYPE_EXPRESSION:
         codegen_generate_exp_node(node, history_begin(history->flags));
             break;
+        case NODE_TYPE_UNARY:
+            codegen_generate_unary(node, history_begin(history->flags));
+            break;
         case NODE_TYPE_VARIABLE:
             codegen_generate_scope_variable(node);
+            break;
+        case NODE_TYPE_STATEMENT_RETURN:
+            codegen_generate_statement_return(node);
             break;
     }
     // The return value of a function is automatically popped from eax, so it can be used later, but if it's a void function then the symbol resolver will throw an error because at the end of the stackframe it will try to restore the ebp (pop ebp) but it will pop off the unused stack from the void function and the symbol resolver will throw an error because it's expecting an ebp value but receiving a result_value
