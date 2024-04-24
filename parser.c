@@ -1052,6 +1052,9 @@ void make_variable_node_and_register(struct history* history, struct datatype* d
     parser_scope_offset(var_node,history);
 
     parser_scope_push(parser_new_scope_entity(var_node, var_node->var.aoffset, 0), var_node->var.type.size);
+
+    resolver_default_new_scope_entity(current_process->resolver,var_node, var_node->var.aoffset,0);
+
     node_push(var_node);
 
 }
@@ -1378,6 +1381,7 @@ void parse_body_multiple_statements(size_t* variable_size, struct vector* body_v
 void parse_body(size_t* variable_size, struct history*history)
 {
     parser_scope_new();
+    resolver_default_new_scope(current_process->resolver,0);
     size_t tmp_size = 0x00;
     if (!variable_size)
     {
@@ -1389,11 +1393,13 @@ void parse_body(size_t* variable_size, struct history*history)
     if (!token_next_is_symbol('{'))
     {
         parse_body_single_statement(variable_size,body_vec,history);
+        resolver_default_finish_scope(current_process->resolver);
         parser_scope_finish();
         return;
     }
     // We have multiple statements between the burly braces {int a; int b; int c;}
     parse_body_multiple_statements(variable_size,body_vec,history);
+    resolver_default_finish_scope(current_process->resolver);
     parser_scope_finish();
     if (variable_size)
     {
@@ -1425,7 +1431,7 @@ void parse_struct_no_new_scope(struct datatype* dtype, bool is_forward_declarati
     // struct dog {} abc; -> is a variabe so we have to compiler the variable name
     if (token_is_identifier(token_peek_next()))
     {
-        struct token* var_name = token_peek_next();
+        struct token* var_name = token_next();
         struct_node->flags |= NODE_FLAG_HAS_VARIABLE_COMBINED;
         if (dtype->flags & DATATYPE_FLAG_STRUCT_UNION_NO_NAME)
         {
@@ -1482,11 +1488,14 @@ void parse_union(struct datatype* dtype)
     if (!is_forward_declaration)
     {
         parser_scope_new();
+        resolver_default_new_scope(current_process->resolver,0);
+
     }
     parse_union_no_scope(dtype, is_forward_declaration);
 
     if (!is_forward_declaration)
     {
+        resolver_default_finish_scope(current_process->resolver);
         parser_scope_finish();
     }
 }
@@ -1497,10 +1506,12 @@ void parse_struct(struct datatype*dtype)
     if (!is_forward_declaration)
     {
         parser_scope_new();
+        resolver_default_new_scope(current_process->resolver,0);
     }
     parse_struct_no_new_scope(dtype, is_forward_declaration);
     if (!is_forward_declaration)
     {
+        resolver_default_finish_scope(current_process->resolver);
         parser_scope_finish();
     }
 }
@@ -1540,6 +1551,7 @@ void parse_variable_full(struct history* history)
 struct vector* parse_function_arguments(struct history*history)
 {
     parser_scope_new();
+    resolver_default_new_scope(current_process->resolver,0);
     struct vector* arguments_vec = vector_create(sizeof(struct node*));
     while (!token_next_is_symbol(')'))
     {
@@ -1565,6 +1577,7 @@ struct vector* parse_function_arguments(struct history*history)
         // Pop off the ','
         token_next();
     }
+    resolver_default_finish_scope(current_process->resolver);
     parser_scope_finish();
     return arguments_vec;
 }
@@ -2020,10 +2033,18 @@ void parse_expressionable(struct history* history)
 
 void parse_keyword_for_global()
 {
-    parse_keyword(history_begin(0));
+    parse_keyword(history_begin(HISTORY_FLAG_IS_GLOBAL_SCOPE));
     struct node* node = node_pop();
 
-    // Do something with the node
+    switch (node->type) {
+        case NODE_TYPE_VARIABLE:
+            case NODE_TYPE_FUNCTION:
+            case NODE_TYPE_STRUCT:
+            case NODE_TYPE_UNION:
+                symresolver_build_for_node(current_process,node);
+                break;
+
+    }
 
     node_push(node);
 }

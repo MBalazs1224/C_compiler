@@ -358,6 +358,7 @@ struct resolver_entity* resolver_create_new_entity_for_var_node_custom_scope( st
     entity->scope = scope;
     assert(entity->scope);
     entity->dtype = var_node->var.type;
+    entity->var_data.dtype = var_node->var.type;
     entity->node = var_node;
     entity->name = var_node->var.name;
     entity->offset = offset;
@@ -633,7 +634,7 @@ struct resolver_entity*  resolver_follow_struct_exp(struct resolver_process* res
     struct resolver_entity* left_entity = resolver_result_peek(result);
     struct resolver_entity_rule rule = {};
     // This is a pointer, and we don't know the offset of it at compile time that's why we mustn't merge it with the left entity
-    if (is_access_node_with_op(node,"->"));
+    if (is_access_node_with_op(node,"->"))
     {
         rule.left.flags = RESOLVER_ENTITY_FLAG_NO_MERGE_WITH_LEFT_ENTITY;
         // Indicate to "dereference the pointer" -> int* a; *a = 50;
