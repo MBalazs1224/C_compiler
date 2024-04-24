@@ -921,7 +921,7 @@ void codegen_generate_entity_access_for_function_call(struct resolver_result *re
     vector_set_peek_pointer_end(entity->func_call_data.arguments);
     struct node* node = vector_peek_ptr(entity->func_call_data.arguments);
 
-    asm_push_ins_pop("ebx",STACK_FRAME_ELEMENT_FLAG_IS_PUSHED_ADDRESS,"result_value");
+    asm_push_ins_pop("ebx",STACK_FRAME_ELEMENT_TYPE_PUSHED_VALUE,"result_value");
 
     // During the generation ebx might be used that's why we move its value to ecx
     asm_push("mov ecx, ebx");
@@ -1445,6 +1445,27 @@ void codegen_generate_exp_node(struct node* node, struct history*history)
     codegen_generate_exp_node_for_arithmetic(node, history_down(history,codegen_remove_uninheritable_flags(history->flags) | additional_flags));
 }
 
+void codegen_discard_unused_stack()
+{
+    asm_stack_peek_start();
+
+    struct stack_frame_element* element = asm_stack_peek();
+    size_t stack_adjustment = 0;
+    while (element)
+    {
+         // We want to pop off the unused variable on the stack which will have the result_value as it's push name
+        if (!S_EQ(element->name,"result_value"))
+        {
+            break;
+        }
+
+        stack_adjustment+= DATA_SIZE_DWORD;
+        element = asm_stack_peek();
+    }
+    // Ignore everything
+    codegen_stack_add(stack_adjustment);
+}
+
 void codegen_generate_statement(struct node* node, struct history* history)
 {
     switch (node->type) {
@@ -1455,6 +1476,8 @@ void codegen_generate_statement(struct node* node, struct history* history)
             codegen_generate_scope_variable(node);
             break;
     }
+    // The return value of a function is automatically popped from eax, so it can be used later, but if it's a void function then the symbol resolver will throw an error because at the end of the stackframe it will try to restore the ebp (pop ebp) but it will pop off the unused stack from the void function and the symbol resolver will throw an error because it's expecting an ebp value but receiving a result_value
+    codegen_discard_unused_stack();
 }
 
 void codegen_generate_scope_no_new_scope(struct vector* statements, struct history*history)
