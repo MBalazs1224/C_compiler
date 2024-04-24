@@ -9,7 +9,7 @@ struct dog
 
 int main()
 {
-    struct dog a;
-    struct dog b;
-    a = b;
+    int *p;
+    int b;
+    p = &b;
 }

@@ -30,6 +30,8 @@ struct history
     };
 };
 void codegen_generate_structure_push(struct resolver_entity* entity, struct history* history, int start_pos);
+bool codegen_resolve_node_for_value(struct node* node, struct history* history);
+void codegen_generate_expressionable(struct node* node, struct history* history);
 void codegen_plus_or_minus_string_for_value(char* out, int val, size_t len);
 void codegen_generate_exp_node(struct node* node, struct history*history);
 const char*codegen_sub_register(const char* original_register, size_t size);
@@ -617,7 +619,11 @@ void codegen_generate_structure_push_or_return(struct resolver_entity*entity, st
 
 void codegen_gen_mem_access(struct node* node, int flags, struct resolver_entity* entity)
 {
-#warning "generate address"
+    if (flags & EXPRESSION_GET_ADDRESS)
+    {
+        codegen_gen_mem_access_get_address(node,flags,entity);
+        return;
+    }
     if (datatype_is_struct_or_union_non_pointer(&entity->dtype))
     {
         codegen_gen_mem_access_get_address(node,0,entity);
@@ -661,6 +667,33 @@ void codegen_generate_indentifier(struct node *node, struct history *history)
 
 }
 
+void codegen_generate_unary_address(struct node* node, struct history* history)
+{
+    int flags = history->flags;
+    codegen_generate_expressionable(node->unary.operand, history_down(history,flags | EXPRESSION_GET_ADDRESS));
+    codegen_response_acknowledge(&(struct response){.flags = RESPONSE_FLAG_UNARY_GET_ADDRESS}) ;
+}
+
+void codegen_generate_unary(struct node *node, struct history *history)
+{
+    int flags = history->flags;
+    if (codegen_resolve_node_for_value(node,history))
+    {
+        return;
+    }
+    if (op_is_indirection(node->unary.op))
+    {
+#warning "Implement pointer unary"
+        return;
+    }
+    else if (op_is_address(node->unary.op))
+    {
+        codegen_generate_unary_address(node,history);
+        return;
+    }
+#warning "Implement normal unary"
+}
+
 // It will push the result of the expressionable to the stack
 void codegen_generate_expressionable(struct node* node, struct history* history)
 {
@@ -679,6 +712,9 @@ void codegen_generate_expressionable(struct node* node, struct history* history)
             break;
         case NODE_TYPE_EXPRESSION:
             codegen_generate_exp_node(node,history);
+            break;
+        case NODE_TYPE_UNARY:
+            codegen_generate_unary(node,history);
             break;
     }
 }
