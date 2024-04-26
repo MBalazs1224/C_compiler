@@ -1982,6 +1982,12 @@ void codegen_generate_for_stmt(struct node*node)
 	codegen_end_entry_exit_point();
 }
 
+void codegen_generate_break_stmt(struct node* node)
+{
+	// Everything that you can break from always generates exit and entry points (with codegen_begin_entry_exit_point and codegen_end_entry_exit_point functions) so here we just need to jump to them
+	codegen_goto_exit_point(node);
+}
+
 void codegen_generate_statement(struct node* node, struct history* history)
 {
     switch (node->type) {
@@ -2008,6 +2014,9 @@ void codegen_generate_statement(struct node* node, struct history* history)
 			break;
 		case NODE_TYPE_STATEMENT_FOR:
 			codegen_generate_for_stmt(node);
+			break;
+		case NODE_TYPE_STATEMENT_BREAK:
+			codegen_generate_break_stmt(node);
 			break;
     }
     // The return value of a function is automatically popped from eax, so it can be used later, but if it's a void function then the symbol resolver will throw an error because at the end of the stackframe it will try to restore the ebp (pop ebp) but it will pop off the unused stack from the void function and the symbol resolver will throw an error because it's expecting an ebp value but receiving a result_value
