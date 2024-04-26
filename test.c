@@ -1,10 +1,9 @@
 int main()
 {
-	int x = 0;
-	do
+	int x;
+	for (x= 0; x < 50; x+=1)
 	{
-		x += 1;
+	
 	}
-	while(x < 50);
 	return x;
 }
