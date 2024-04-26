@@ -204,6 +204,15 @@ struct string_table_element
 
 struct code_generator
 {
+	struct generator_switch_stmt
+	{
+		struct generator_switch_stmt_entity
+		{
+			int id;
+		} current;
+		// Vector of generator_switch_stmt_entity
+		struct vector* switches;
+	} _switch;
     // vector of struct string_table_elements*
     struct vector* string_table;
     // vector of struct codegen_entry_point*
