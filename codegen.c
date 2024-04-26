@@ -2099,6 +2099,11 @@ void codegen_generate_switch_case_stmt(struct node* node)
 	asm_push("; CASE %i",case_stmt_exp->llnum);
 	codegen_end_case_statement();
 }
+
+void codegen_generate_goto_stmt(struct node* node)
+{
+	asm_push("jmp label_%s",node->stmt._goto.label->sval);
+}
 void codegen_generate_statement(struct node* node, struct history* history)
 {
     switch (node->type) {
@@ -2140,6 +2145,9 @@ void codegen_generate_statement(struct node* node, struct history* history)
 			break;
 		case NODE_TYPE_STATEMENT_DEFAULT:
 			codegen_generate_switch_default_stmt(node);
+			break;
+		case NODE_TYPE_STATEMENT_GOTO:
+			codegen_generate_goto_stmt(node);
 			break;
     }
     // The return value of a function is automatically popped from eax, so it can be used later, but if it's a void function then the symbol resolver will throw an error because at the end of the stackframe it will try to restore the ebp (pop ebp) but it will pop off the unused stack from the void function and the symbol resolver will throw an error because it's expecting an ebp value but receiving a result_value
