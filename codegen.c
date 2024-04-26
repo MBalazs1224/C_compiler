@@ -1946,11 +1946,9 @@ void codegen_generate_do_while_stmt(struct node* node)
 	asm_push("jne .do_while_start_%i",do_while_start_id);
 	codegen_end_entry_exit_point();
 }
-#warning  "Continue in for stmt never returns"
 void codegen_generate_for_stmt(struct node*node)
 {
 	struct for_stmt* for_stmt = &node->stmt.for_stmt;
-	codegen_begin_entry_exit_point();
 	
 	int for_loop_start_id = codegen_label_count();
 	int for_loop_end_id = codegen_label_count();
@@ -1959,6 +1957,15 @@ void codegen_generate_for_stmt(struct node*node)
 		codegen_generate_expressionable(for_stmt->init_node, history_begin(0));
 		asm_push_ins_pop_or_ignore("eax",STACK_FRAME_ELEMENT_TYPE_PUSHED_VALUE,"result_value");
 	}
+	asm_push("jmp .for_loop_%i",for_loop_start_id);
+	codegen_begin_entry_exit_point();
+	
+	if (for_stmt->loop_node)
+	{
+		codegen_generate_expressionable(for_stmt->loop_node, history_begin(0));
+		asm_push_ins_pop_or_ignore("eax",STACK_FRAME_ELEMENT_TYPE_PUSHED_VALUE,"result_value");
+	}
+	
 	asm_push(".for_loop_%i:",for_loop_start_id);
 	if (for_stmt->cond_node)
 	{
