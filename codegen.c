@@ -1447,7 +1447,7 @@ void codegen_gen_cmp(const char* value, const char* set_ins)
 
 
     asm_push("cmp eax, %s",value);
-    asm_push("% al",set_ins);
+    asm_push("%s al",set_ins);
     asm_push("movzx eax,al");
 }
 
@@ -1893,6 +1893,26 @@ void codegen_generate_if_stmt(struct node* node)
 	
 }
 
+void codegen_generate_while_stmt(struct node* node)
+{
+	codegen_begin_entry_exit_point();
+	int while_start_id = codegen_label_count();
+	int while_end_id = codegen_label_count();
+	asm_push(".while_start_%i:",while_start_id);
+	// Compute the value and push it to the stack
+	codegen_generate_expressionable(node->stmt.while_stmt.exp_node, history_begin(0));
+	// Pop the value into eax
+	asm_push_ins_pop("eax",STACK_FRAME_ELEMENT_TYPE_PUSHED_VALUE,"result_value");
+	// Check if the value is false
+	asm_push("cmp eax, 0");
+	asm_push("je .while_end_%i",while_end_id);
+	codegen_generate_body(node->stmt.while_stmt.body_node, history_begin(IS_ALONE_STATEMENT));
+	asm_push("jmp .while_start_%i",while_start_id);
+	asm_push(".while_end:%i:",while_end_id);
+	// The program can freely run after the while finished
+	codegen_end_entry_exit_point();
+}
+
 void codegen_generate_statement(struct node* node, struct history* history)
 {
     switch (node->type) {
@@ -1907,9 +1927,13 @@ void codegen_generate_statement(struct node* node, struct history* history)
             break;
 		case NODE_TYPE_STATEMENT_IF:
 			codegen_generate_if_stmt(node);
+			break;
         case NODE_TYPE_STATEMENT_RETURN:
             codegen_generate_statement_return(node);
             break;
+		case NODE_TYPE_STATEMENT_WHILE:
+			codegen_generate_while_stmt(node);
+			break;
     }
     // The return value of a function is automatically popped from eax, so it can be used later, but if it's a void function then the symbol resolver will throw an error because at the end of the stackframe it will try to restore the ebp (pop ebp) but it will pop off the unused stack from the void function and the symbol resolver will throw an error because it's expecting an ebp value but receiving a result_value
     codegen_discard_unused_stack();
