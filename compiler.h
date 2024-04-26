@@ -1175,7 +1175,7 @@ void make_tenary_node(struct node*true_node, struct node* false_node);
 void make_cast_node(struct datatype* dtype, struct node* operand_node);
 void make_union_node(const char* name, struct node* body_node);
 void make_unary_node(const char* op, struct node* operand_node);
-
+void make_default_node();
 bool keyword_is_datatype(const char *str);
 
 struct node* node_pop();
