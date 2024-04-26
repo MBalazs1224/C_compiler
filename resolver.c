@@ -353,8 +353,7 @@ struct resolver_entity* resolver_create_new_entity_for_var_node_custom_scope( st
     {
         return NULL;
     }
-
-    entity->flags = RESOLVER_ENTITY_FLAG_NO_MERGE_WITH_NEXT_ENTITY | RESOLVER_ENTITY_FLAG_NO_MERGE_WITH_LEFT_ENTITY;
+	
     entity->scope = scope;
     assert(entity->scope);
     entity->dtype = var_node->var.type;
@@ -597,7 +596,7 @@ struct resolver_entity* resolver_follow_for_name (struct resolver_process* resol
     resolver_result_entity_push(result,entity);
 
     // The first found identifier
-    if (result->identifier)
+    if (!result->identifier)
     {
         result->identifier = entity;
     }
@@ -636,7 +635,7 @@ struct resolver_entity*  resolver_follow_struct_exp(struct resolver_process* res
     // This is a pointer, and we don't know the offset of it at compile time that's why we mustn't merge it with the left entity
     if (is_access_node_with_op(node,"->"))
     {
-        rule.left.flags = RESOLVER_ENTITY_FLAG_NO_MERGE_WITH_LEFT_ENTITY;
+        rule.left.flags = RESOLVER_ENTITY_FLAG_NO_MERGE_WITH_NEXT_ENTITY;
         // Indicate to "dereference the pointer" -> int* a; *a = 50;
         if (left_entity->type != RESOLVER_ENTITY_TYPE_FUNCTION_CALL)
         {
