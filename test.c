@@ -1,5 +1,8 @@
+int printf(const char* s);
+
 int main()
 {
-	goto abc;
-abc:
+	const char* abc = "hello world!";
+	
+	printf("hello world!\n");
 }

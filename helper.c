@@ -314,6 +314,18 @@ struct datatype datatype_for_numeric()
     return dtype;
 }
 
+struct datatype datatype_for_string()
+{
+	// Creates an artificial datatype of string
+	struct datatype dtype = {};
+	dtype.type = DATA_TYPE_INTEGER;
+	dtype.type_str = "char";
+	dtype.flags |= DATATYPE_FLAG_IS_POINTER | DATATYPE_FLAG_IS_LITERAL;
+	dtype.pointer_depth = 1;
+	dtype.size = DATA_SIZE_DWORD;
+	return dtype;
+}
+
 bool op_is_indirection(const char* op)
 {
     return S_EQ(op,"*");
