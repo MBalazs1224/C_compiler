@@ -1946,7 +1946,7 @@ void codegen_generate_do_while_stmt(struct node* node)
 	asm_push("jne .do_while_start_%i",do_while_start_id);
 	codegen_end_entry_exit_point();
 }
-
+#warning  "Continue in for stmt never returns"
 void codegen_generate_for_stmt(struct node*node)
 {
 	struct for_stmt* for_stmt = &node->stmt.for_stmt;
@@ -1978,7 +1978,7 @@ void codegen_generate_for_stmt(struct node*node)
 		asm_push_ins_pop_or_ignore("eax",STACK_FRAME_ELEMENT_TYPE_PUSHED_VALUE,"result_value");
 	}
 	asm_push("jmp .for_loop_%i",for_loop_start_id);
-	asm_push(".for_loop_end%i:",for_loop_end_id);
+	asm_push(".for_loop_end_%i:",for_loop_end_id);
 	codegen_end_entry_exit_point();
 }
 
@@ -1986,6 +1986,12 @@ void codegen_generate_break_stmt(struct node* node)
 {
 	// Everything that you can break from always generates exit and entry points (with codegen_begin_entry_exit_point and codegen_end_entry_exit_point functions) so here we just need to jump to them
 	codegen_goto_exit_point(node);
+}
+
+void codegen_generate_continue_stmt(struct node* node)
+{
+	// Everything that you can break from always generates exit and entry points (with codegen_begin_entry_exit_point and codegen_end_entry_exit_point functions) so here we just need to jump to them
+	codegen_goto_entry_point(node);
 }
 
 void codegen_generate_statement(struct node* node, struct history* history)
@@ -2017,6 +2023,9 @@ void codegen_generate_statement(struct node* node, struct history* history)
 			break;
 		case NODE_TYPE_STATEMENT_BREAK:
 			codegen_generate_break_stmt(node);
+			break;
+		case NODE_TYPE_STATEMENT_CONTINUE:
+			codegen_generate_continue_stmt(node);
 			break;
     }
     // The return value of a function is automatically popped from eax, so it can be used later, but if it's a void function then the symbol resolver will throw an error because at the end of the stackframe it will try to restore the ebp (pop ebp) but it will pop off the unused stack from the void function and the symbol resolver will throw an error because it's expecting an ebp value but receiving a result_value
