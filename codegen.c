@@ -8,7 +8,7 @@
 
 static struct compiler_process* current_process = NULL;
 static struct node* current_function = NULL;
-
+int codegen_remove_uninheritable_flags(int flags);
 void codegen_stack_add_no_compile_time_stack_frame_restore(size_t stack_size);
 
 void asm_pop_ebp_no_stack_frame_restore();
@@ -841,6 +841,11 @@ void codegen_generate_string(struct node* node,struct history*history)
 	asm_push_ins_push_with_data("eax",STACK_FRAME_ELEMENT_TYPE_PUSHED_VALUE,"result_value",0,&(struct stack_frame_data){.dtype = datatype_for_string()});
 }
 
+void codegen_generate_expression_parenthesis_node(struct node* node,struct history*history)
+{
+	codegen_generate_expressionable(node->parenthesis.exp, history_down(history,codegen_remove_uninheritable_flags(history->flags)));
+}
+
 // It will push the result of the expressionable to the stack
 void codegen_generate_expressionable(struct node* node, struct history* history)
 {
@@ -863,9 +868,13 @@ void codegen_generate_expressionable(struct node* node, struct history* history)
         case NODE_TYPE_EXPRESSION:
             codegen_generate_exp_node(node,history);
             break;
+		case NODE_TYPE_EXPRESSION_PARENTHESIS:
+			codegen_generate_expression_parenthesis_node(node,history);
+			break;
         case NODE_TYPE_UNARY:
             codegen_generate_unary(node,history);
             break;
+		
     }
 }
 
