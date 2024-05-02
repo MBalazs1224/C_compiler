@@ -110,7 +110,7 @@ struct resolver_entity* resolver_result_peek(struct resolver_result* result)
 struct resolver_entity* resolver_result_peek_ignore_rule_entity(struct resolver_result* result)
 {
     struct resolver_entity* entity = resolver_result_peek(result);
-    while (entity && entity->type == RESOLVER_ENTITY_TYPE_RULE);
+    while (entity && entity->type == RESOLVER_ENTITY_TYPE_RULE)
     {
         entity = entity->prev;
     }

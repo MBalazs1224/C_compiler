@@ -775,7 +775,7 @@ void codegen_generate_unary_indirection(struct node* node, struct history* histo
     for (int i = 0; i < depth; ++i)
     {
         // Do indirection
-        asm_push("move %s, [%s]",reg_to_use,reg_to_use);
+        asm_push("mov %s, [%s]",reg_to_use,reg_to_use);
     }
     if (real_depth == res->data.resolved_entity->dtype.pointer_depth)
     {
@@ -1071,7 +1071,7 @@ void codegen_generate_entity_access_for_variable_or_general(struct resolver_resu
     if(entity->flags & RESOLVER_ENTITY_FLAG_DO_INDIRECTION)
     {
         // *a -> pointer access
-        asm_push("move ebx, [ebx]"); // Move to ebx whatever is stored at the address that is currently in ebx
+        asm_push("mov ebx, [ebx]"); // Move to ebx whatever is stored at the address that is currently in ebx
     }
     asm_push("add ebx, %i",entity->offset);
     asm_push_ins_push_with_data("ebx",STACK_FRAME_ELEMENT_TYPE_PUSHED_VALUE,"result_value",0,&(struct stack_frame_data){.dtype = entity->dtype});
@@ -1398,7 +1398,7 @@ bool codegen_resolve_node_for_value(struct node* node, struct history* history)
         asm_push_ins_pop("eax",STACK_FRAME_ELEMENT_TYPE_PUSHED_VALUE,"result_value");
         if (result->flags & RESOLVER_RESULT_FLAG_FINAL_INDIRECTION_REQUIRED_FOR_VALUE)
         {
-            asm_push("move eax, [eax]");
+            asm_push("mov eax, [eax]");
         }
         codegen_reduce_register("eax", datatype_element_size(&dtype),dtype.flags & DATATYPE_FLAG_IS_SIGNED);
         asm_push_ins_push_with_data("eax",STACK_FRAME_ELEMENT_TYPE_PUSHED_VALUE,"result_value",0,&(struct stack_frame_data){.dtype=dtype});
@@ -1892,7 +1892,7 @@ void codegen_generate_statement_return_exp(struct node* node)
          *
          * This is the way C does it, but we will replace it with a basic struct move for convenience
          */
-        asm_push("move edx, [ebp+8]");
+        asm_push("mov edx, [ebp+8]");
         codegen_generate_move_struct(&dtype,"edx",0);
         asm_push("mov eax, [ebp+8]");
         return;
@@ -1968,7 +1968,7 @@ void _codegen_generate_if_stmt(struct node* node, int end_label_id)
 	asm_push("cmp eax, 0");
 	asm_push("je .if_%i",if_label_id);
 	codegen_generate_body(node->stmt.if_stmt.body_node, history_begin(IS_ALONE_STATEMENT));
-	asm_push("jump .if_end_%i",end_label_id);
+	asm_push("jmp .if_end_%i",end_label_id);
 	asm_push(".if_%i:",if_label_id);
 	
 	// If there is an else of else if it will be in the next node
