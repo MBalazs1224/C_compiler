@@ -1,20 +1,21 @@
 section .data
+; abc a
+a: dd 0
 section .text
 global main
 ; main function
 main:
 push ebp
 mov ebp, esp
-sub esp, 16
 push dword 50
-push dword [ebp-4]
-; INDIRECTION
-pop ebx
-push ebx
-pop edx
 pop eax
-mov dword [edx], eax
-add esp, 16
+mov dword [a], eax
+push dword [a]
+pop eax
+push eax
+pop eax
+pop ebp
+ret
 pop ebp
 ret
 section .rodata

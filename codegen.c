@@ -568,6 +568,17 @@ void codegen_generate_global_variable_for_struct(struct node* node)
     asm_push("%s: %s 0",node->var.name, asm_keyword_for_size(variable_size(node),tmp_buff));
 }
 
+void codegen_generate_global_variable_for_union(struct node* node)
+{
+	if (node->var.val != NULL)
+	{
+		compiler_error(current_process,"We don't yet support values for unions!");
+		return;
+	}
+	char tmp_buff[256];
+	asm_push("%s: %s 0",node->var.name, asm_keyword_for_size(variable_size(node),tmp_buff));
+}
+
 void codegen_generate_global_variable(struct node* node )
 {
     // ; TYPE_NAME VARIABLE_NAME
@@ -584,6 +595,10 @@ void codegen_generate_global_variable(struct node* node )
         case DATA_TYPE_STRUCT:
             codegen_generate_global_variable_for_struct(node);
             break;
+		case DATA_TYPE_UNION:
+			codegen_generate_global_variable_for_union(node);
+			
+			break;
         case DATA_TYPE_DOUBLE:
         case DATA_TYPE_FLOAT:
             compiler_error(current_process,"Doubles and floats are not supported in this compiler!");
@@ -605,6 +620,15 @@ void codegen_generate_struct(struct node* node)
     }
 }
 
+void codegen_generate_union(struct node* node)
+{
+	if (node->flags & NODE_FLAG_HAS_VARIABLE_COMBINED)
+	{
+		codegen_generate_global_variable(node->_union.var);
+	}
+}
+
+
 void codegen_generate_data_section_part(struct node* node)
 {
     // CREATE A SWITCH FOR PROCESSING THE GLOBAL DATA (anything that will be in the global scope)
@@ -616,6 +640,9 @@ void codegen_generate_data_section_part(struct node* node)
         case NODE_TYPE_STRUCT:
             codegen_generate_struct(node);
             break;
+		case NODE_TYPE_UNION:
+			codegen_generate_union(node);
+			break;
     }
 }
 
