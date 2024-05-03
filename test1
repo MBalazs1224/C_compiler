@@ -1,6 +1,4 @@
 section .data
-; int abc
-abc: times 4000 db 0
 section .text
 global main
 ; main function
@@ -8,20 +6,14 @@ main:
 push ebp
 mov ebp, esp
 sub esp, 16
-push dword 10
-lea ebx, [abc]
-push ebx
+push dword 50
+push dword [ebp-4]
+; INDIRECTION
 pop ebx
-add ebx, 160
 push ebx
 pop edx
 pop eax
 mov dword [edx], eax
-push dword [ebp-4]
-pop eax
-add esp, 16
-pop ebp
-ret
 add esp, 16
 pop ebp
 ret

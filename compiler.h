@@ -1413,6 +1413,6 @@ bool fixup_resolve(struct fixup* fixup);
 void* fixup_private(struct fixup*fixup);
 bool fixups_resolve(struct fixup_system* system);
 
-
-
+bool unary_operand_compatible(struct token* token);
+bool is_parentheses(const char* op);
 #endif
