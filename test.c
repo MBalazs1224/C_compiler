@@ -1,7 +1,7 @@
-int abc[50];
+int abc[50][20];
 int main()
 {
     int x;
-	x = abc[3];
+	abc[1][20] = 10;
 	return x;
 }

@@ -1,6 +1,6 @@
 section .data
 ; int abc
-abc: times 200 db 0
+abc: times 4000 db 0
 section .text
 global main
 ; main function
@@ -8,11 +8,15 @@ main:
 push ebp
 mov ebp, esp
 sub esp, 16
-push dword [abc+12]
+push dword 10
+lea ebx, [abc]
+push ebx
+pop ebx
+add ebx, 160
+push ebx
+pop edx
 pop eax
-push eax
-pop eax
-mov dword [ebp-4], eax
+mov dword [edx], eax
 push dword [ebp-4]
 pop eax
 add esp, 16

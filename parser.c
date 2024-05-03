@@ -357,8 +357,8 @@ void parser_reorder_expression(struct node** node_out)
      * return func(books[0].name,1000)
      * books[0].name,1000 would be interpreted as books[0].(name,1000) so we need to reorder the nodes
      */
-
-    if ((is_array_node(node->exp.left) || is_node_assignment(node->exp.right)) || node_is_expression(node->exp.left,"()") && node_is_expression(node->exp.right,","))
+	
+	if ((is_array_node(node->exp.left) && is_node_assignment(node->exp.right)) || (node_is_expression(node->exp.left,"()") || node_is_expression(node->exp.left,("[]")) && node_is_expression(node->exp.right,",")))
     {
         parser_node_move_right_left_to_left(node);
     }
