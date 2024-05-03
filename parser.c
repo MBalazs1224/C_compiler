@@ -74,7 +74,7 @@ struct history
     int flags;
     struct parser_history_switch
     {
-        struct history_cases case_data;
+        struct history_cases* case_data;
     } _switch;
 };
 
@@ -96,8 +96,9 @@ static struct history* history_down(struct history* history, int flags)
 
 struct parser_history_switch parser_new_switch_statement(struct history* history)
 {
-    memset(&history->_switch,0,sizeof(&history->_switch));
-    history->_switch.case_data.cases = vector_create(sizeof(struct parsed_switch_case));
+    memset(&history->_switch,0,sizeof(history->_switch));
+	history->_switch.case_data = calloc(1, sizeof(struct history_cases));
+    history->_switch.case_data->cases = vector_create(sizeof(struct parsed_switch_case));
     history->flags |= HISTORY_FLAG_IN_SWITCH_STATEMENT;
     return history->_switch;
 }
@@ -113,7 +114,7 @@ void parser_register_case(struct history* history, struct node* case_node)
     struct parsed_switch_case scase;
     scase.index = case_node->stmt._case.exp->llnum;
 
-    vector_push(history->_switch.case_data.cases,&scase);
+    vector_push(history->_switch.case_data->cases,&scase);
 
 }
 
@@ -1746,7 +1747,7 @@ void parse_default(struct history* history)
 	expect_keyword("default");
 	expect_sym(':');
 	make_default_node();
-	history->_switch.case_data.has_default_case = true;
+	history->_switch.case_data->has_default_case = true;
 }
 
 void parse_case(struct history* history)
@@ -1776,7 +1777,7 @@ void parse_switch(struct history* history)
     struct node* body_node = node_pop();
 
     // Make the switch node
-    make_switch_node(switch_exp_node,body_node,_switch.case_data.cases,_switch.case_data.has_default_case);
+    make_switch_node(switch_exp_node,body_node,_switch.case_data->cases,_switch.case_data->has_default_case);
     parser_end_switch_statement(&_switch);
 }
 

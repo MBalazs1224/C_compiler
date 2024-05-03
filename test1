@@ -42,38 +42,83 @@ global main
 main:
 push ebp
 mov ebp, esp
-sub esp, 32
-lea ebx, [set_dog]
-push ebx
-pop ebx
-mov ecx, ebx
-; SUBTRACT ROOM FOR RETURNED STRUCTURE/UNION DATATYPE
-sub esp, 12
-push esp
-call ecx
-add esp, 4
-mov ebx, eax
-; STRUCTURE PUSH
-push dword [ebx+8]
-push dword [ebx+4]
-push dword [ebx+0]
-; END STRUCTURE PUSH
-; STRUCTURE PUSH
-push dword [ebx+8]
-push dword [ebx+4]
-push dword [ebx+0]
-; END STRUCTURE PUSH
-add esp, 36
-push dword [ebp-4]
-; INDIRECTION
-pop ebx
-mov ebx, [ebx]
-push ebx
+sub esp, 16
+push dword 0
 pop eax
-add esp, 32
+mov dword [ebp-4], eax
+push dword 1
+pop eax
+cmp eax, 0
+je .if_2
+.entry_point_3:
+.switch_stmt_5:
+push dword [ebp-4]
+pop eax
+cmp eax,0
+je .switch_stmt_5_case_0
+jmp .exit_point_4
+.switch_stmt_5_case_0:
+; CASE 0
+.entry_point_6:
+.switch_stmt_8:
+push dword 5
+pop eax
+cmp eax,4
+je .switch_stmt_8_case_4
+cmp eax,5
+je .switch_stmt_8_case_5
+jmp .exit_point_7
+.switch_stmt_8_case_4:
+; CASE 4
+push dword 5
+pop eax
+neg eax
+push eax
+pop eax
+mov dword [ebp-4], eax
+jmp .exit_point_7
+.switch_stmt_8_case_5:
+; CASE 5
+push dword [ebp-4]
+push dword 2
+pop ecx
+pop eax
+add eax, ecx
+push eax
+pop eax
+mov dword [ebp-4], eax
+jmp .exit_point_7
+.switch_stmt_8_end:
+.exit_point_7:
+jmp .exit_point_4
+.switch_stmt_5_end:
+.exit_point_4:
+.entry_point_9:
+.switch_stmt_11:
+push dword 4
+pop eax
+jmp .switch_stmt_11_case_default
+; DEFAULT CASE
+.switch_stmt_11_case_default:
+push dword [ebp-4]
+push dword [ebp-4]
+pop ecx
+pop eax
+add eax, ecx
+push eax
+pop eax
+mov dword [ebp-4], eax
+.switch_stmt_11_end:
+.exit_point_10:
+jmp .if_end_1
+.if_2:
+.if_end_1:
+push dword [ebp-4]
+pop eax
+add esp, 16
 pop ebp
 ret
-add esp, 32
+add esp, 16
 pop ebp
 ret
 section .rodata

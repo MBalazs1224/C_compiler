@@ -15,6 +15,29 @@ struct dog set_dog()
 }
 int main()
 {
-	struct dog d; set_dog();
-	return *d.c;
+	int res;
+	res = 0;
+	if(1)
+	{
+		switch (res)
+		{
+			case 0:
+				switch (5)
+				{
+					case 4:
+						res = -5;
+						break;
+					case 5:
+						res = res + 2;
+						break;
+				}
+				break;
+		}
+		switch (4)
+		{
+			default:
+				res = res + res;
+		}
+	}
+	return res;
 }
