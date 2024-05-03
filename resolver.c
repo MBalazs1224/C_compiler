@@ -601,7 +601,7 @@ struct resolver_entity* resolver_follow_for_name (struct resolver_process* resol
         result->identifier = entity;
     }
     // If the entity is a variable or function and the datatype is struct or union then we have to set the last struct or union entity to the found entity
-    if (entity->type == RESOLVER_ENTITY_TYPE_VARIABLE && datatype_is_struct_or_union(&entity->var_data.dtype) || entity->type == RESOLVER_ENTITY_TYPE_FUNCTION && datatype_is_struct_or_union(&entity->dtype))
+    if (entity->type == RESOLVER_ENTITY_TYPE_VARIABLE && datatype_is_struct_or_union(&entity->var_data.dtype) || (entity->type == RESOLVER_ENTITY_TYPE_FUNCTION && datatype_is_struct_or_union(&entity->dtype)))
     {
         result->last_struct_union_entity = entity;
     }

@@ -67,7 +67,7 @@ void resolver_default_global_asm_address(const char* name, int offset, char* add
         // Treat it as we are accessing a global variable
         resolver_default_global_asm_address(variable_node(var_node)->var.name,offset,entity_data->address);
         // The base address will be the variable's name
-        sprintf(entity_data->address,"%s", variable_node(var_node)->var.name);
+        sprintf(entity_data->base_address,"%s", variable_node(var_node)->var.name);
     }
 
 }

@@ -1180,12 +1180,48 @@ void codegen_generate_entity_access_for_cast(struct resolver_result* result, str
 	asm_push("; CAST");
 }
 
+void codegen_generate_entity_access_for_array_bracket_pointer(struct resolver_result* result, struct resolver_entity* entity)
+{
+	asm_push_ins_pop("eax",STACK_FRAME_ELEMENT_TYPE_PUSHED_VALUE,"result_value");
+	codegen_generate_expressionable(entity->array.array_index_node, history_begin(0));
+	asm_push_ins_pop("eax",STACK_FRAME_ELEMENT_TYPE_PUSHED_VALUE,"result_value");
+	// If it's above a byte we need to multiply it by the data size to get tot the correct index
+	if (datatype_element_size(&entity->dtype) > DATA_SIZE_BYTE)
+	{
+		asm_push("imul eax, %i", datatype_size_for_array_access(&entity->dtype));
+	}
+	asm_push("add ebx, eax");
+	asm_push_ins_push_with_data("ebx",STACK_FRAME_ELEMENT_TYPE_PUSHED_VALUE,"result_value",0,&(struct stack_frame_data){.dtype=entity->dtype});
+}
+
+void codegen_generate_entity_access_for_array_bracket(struct resolver_result* result, struct resolver_entity* entity)
+{
+	if (entity->flags & RESOLVER_ENTITY_FLAG_DO_IS_POINTER_ARRAY_ENTITY)
+	{
+		codegen_generate_entity_access_for_array_bracket_pointer(result,entity);
+		return;
+	}
+	asm_push_ins_pop("ebx",STACK_FRAME_ELEMENT_TYPE_PUSHED_VALUE,"result_value");
+	codegen_generate_expressionable(entity->array.array_index_node, history_begin(0));
+	asm_push_ins_pop("eax",STACK_FRAME_ELEMENT_TYPE_PUSHED_VALUE,"result_value");
+	if (entity->flags & RESOLVER_ENTITY_FLAG_JUST_USE_OFFSET)
+	{
+		asm_push("add ebx, %i", entity->offset);
+	}
+	else
+	{
+		asm_push("imul eax, %i",entity->offset);
+		asm_push("add ebx, eax");
+	}
+	asm_push_ins_push_with_data("ebx",STACK_FRAME_ELEMENT_TYPE_PUSHED_VALUE,"result_value",0,&(struct stack_frame_data){.dtype = entity->dtype});
+}
+
 void codegen_generate_entity_access_for_entity_assignment_left_operand(struct resolver_result *result,struct resolver_entity *entity, struct history *history)
 {
 	switch (entity->type)
 	{
 		case RESOLVER_ENTITY_TYPE_ARRAY_BRACKET:
-#warning "Implement array brackets"
+			codegen_generate_entity_access_for_array_bracket(result,entity);
 			break;
 		case RESOLVER_ENTITY_TYPE_VARIABLE:
 		case RESOLVER_ENTITY_TYPE_GENERAL:
@@ -1370,7 +1406,7 @@ void codegen_generate_entity_access_for_entity(struct resolver_result* result, s
 {
     switch (entity->type) {
         case RESOLVER_ENTITY_TYPE_ARRAY_BRACKET:
-#warning "Implement array brackets"
+			codegen_generate_entity_access_for_array_bracket(result,entity);
             break;
         case RESOLVER_ENTITY_TYPE_VARIABLE:
         case RESOLVER_ENTITY_TYPE_GENERAL:

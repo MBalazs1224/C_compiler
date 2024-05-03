@@ -1,4 +1,6 @@
 section .data
+; int abc
+abc: times 200 db 0
 section .text
 global main
 ; main function
@@ -6,19 +8,11 @@ main:
 push ebp
 mov ebp, esp
 sub esp, 16
-push dword 50
+push dword [abc+12]
+pop eax
+push eax
 pop eax
 mov dword [ebp-4], eax
-push dword [ebp-4]
-; CAST
-pop eax
-push eax
-eax
-movsx eax, al
-push eax
-pop eax
-mov byte [ebp-6], al
-add esp, 4
 push dword [ebp-4]
 pop eax
 add esp, 16
