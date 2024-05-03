@@ -6,20 +6,15 @@ global main
 main:
 push ebp
 mov ebp, esp
-lea ebx, [printf]
-push ebx
-pop ebx
-mov ecx, ebx
-push dword 50
-mov eax, str_1
-push eax
-call ecx
-add esp, 8
-push eax
+sub esp, 16
+push dword 1
 pop eax
-push eax
-add esp, 4
+mov dword [ebp-4], eax
+push dword 1
+pop eax
+mov ecx, eax
+sal dword [ebp-4], cl
+add esp, 16
 pop ebp
 ret
 section .rodata
-str_1: db 'h','e','l','l','o',' ','w','o','r','l','d',' ','%','i',10, 0

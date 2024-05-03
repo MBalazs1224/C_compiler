@@ -332,7 +332,7 @@ bool is_node_assignment(struct node* node)
 {
     if (node->type != NODE_TYPE_EXPRESSION)
         return false;
-    return S_EQ(node->exp.op,"=") || S_EQ (node->exp.op,"+=") || S_EQ(node->exp.op,"-=") || S_EQ (node->exp.op,"/=") || S_EQ(node->exp.op,"*=");
+    return S_EQ(node->exp.op,"=") || S_EQ (node->exp.op,"+=") || S_EQ(node->exp.op,"-=") || S_EQ (node->exp.op,"/=") || S_EQ(node->exp.op,"*=") || S_EQ (node->exp.op,"<<=") || S_EQ(node->exp.op,">>=");
 }
 
 bool node_valid(struct node* node)

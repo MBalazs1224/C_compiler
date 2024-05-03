@@ -189,7 +189,7 @@ static bool is_single_operator(char op)
 
 bool op_valid(const char *op)
 {
-    return S_EQ(op, "+") || S_EQ(op, "-") || S_EQ(op, "*") || S_EQ(op, "/") || S_EQ(op, "!") || S_EQ(op, "^") || S_EQ(op, "+=") || S_EQ(op, "-=") || S_EQ(op, "*=") || S_EQ(op, "/=") || S_EQ(op, ">>") || S_EQ(op, "<<") || S_EQ(op, ">=") || S_EQ(op, "<=") || S_EQ(op, ">") || S_EQ(op, "<") || S_EQ(op, "||") || S_EQ(op, "&&") || S_EQ(op, "|") || S_EQ(op, "&") || S_EQ(op, "++") || S_EQ(op, "--") || S_EQ(op, "=") || S_EQ(op, "!=") || S_EQ(op, "==") || S_EQ(op, "->") || S_EQ(op, "(") || S_EQ(op, "[") || S_EQ(op, ",") || S_EQ(op, ".") || S_EQ(op, "...") || S_EQ(op, "~") || S_EQ(op, "?") || S_EQ(op, "%");
+    return S_EQ(op, "+") || S_EQ(op, "-") || S_EQ(op, "*") || S_EQ(op, "/") || S_EQ(op, "!") || S_EQ(op, "^") || S_EQ(op, "+=") || S_EQ(op, "-=") || S_EQ(op, "*=") || S_EQ(op, "/=") || S_EQ(op, ">>") || S_EQ(op, "<<") || S_EQ(op, ">>=") || S_EQ(op, "<<=") || S_EQ(op, ">=") || S_EQ(op, "<=") || S_EQ(op, ">") || S_EQ(op, "<") || S_EQ(op, "||") || S_EQ(op, "&&") || S_EQ(op, "|") || S_EQ(op, "&") || S_EQ(op, "++") || S_EQ(op, "--") || S_EQ(op, "=") || S_EQ(op, "!=") || S_EQ(op, "==") || S_EQ(op, "->") || S_EQ(op, "(") || S_EQ(op, "[") || S_EQ(op, ",") || S_EQ(op, ".") || S_EQ(op, "...") || S_EQ(op, "~") || S_EQ(op, "?") || S_EQ(op, "%");
 }
 void read_op_flush_back_keep_first(struct buffer *buffer)
 {
@@ -211,15 +211,29 @@ const char *read_op()
     char op = nextc();
     struct buffer *buffer = buffer_create();
     buffer_write(buffer, op);
-    if (!op_treated_as_one(op))
+	// Without this, *= would be treated as two different operators (* and =) because in the op_treated_as_one function * is treated as one, so we specifically have to check for it here
+	if (op == '*' && peekc() == '=')
+	{
+		// Writes the = to the buffer, swo we have *= in the buffer
+		buffer_write(buffer,peekc());
+		// Skip the = that we just peeked
+		nextc();
+		single_operator = false;
+	}
+    else if (!op_treated_as_one(op))
     {
-        op = peekc();
-        if (is_single_operator(op))
-        {
-            buffer_write(buffer, op);
-            nextc();
-            single_operator = false;
-        }
+		// Accounts for 3 character operators for example >>=, <<=
+		for (int i = 0; i < 2; ++i)
+		{
+			op = peekc();
+			if (is_single_operator(op))
+			{
+				buffer_write(buffer, op);
+				nextc();
+				single_operator = false;
+			}
+		}
+    
     }
     buffer_write(buffer, 0x00);
     char *ptr = buffer_ptr(buffer);
