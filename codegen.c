@@ -846,6 +846,31 @@ void codegen_generate_expression_parenthesis_node(struct node* node,struct histo
 	codegen_generate_expressionable(node->parenthesis.exp, history_down(history,codegen_remove_uninheritable_flags(history->flags)));
 }
 
+void codegen_generate_tenary(struct node* node,struct history*history)
+{
+	int true_label_id = codegen_label_count();
+	int false_label_id = codegen_label_count();
+	int tenary_end_label_id = codegen_label_count();
+	struct datatype last_dtype;
+	assert(asm_datatype_back(&last_dtype));
+	
+	// 50 ? 20 : 10; -> 50 already been process so we pop it off
+	asm_push_ins_pop("eax",STACK_FRAME_ELEMENT_TYPE_PUSHED_VALUE,"result_value");
+	// Check if the popped of expression is false
+	asm_push("cmp eax, 0");
+	asm_push("je .tenary_false_%i",false_label_id);
+	asm_push(".tenary_true_%i:",true_label_id);
+	
+	codegen_generate_expressionable(node->tenary.true_node, history_down(history,0));
+	asm_push_ins_pop_or_ignore("eax",STACK_FRAME_ELEMENT_TYPE_PUSHED_VALUE,"result_value");
+	asm_push("jmp .tenary_end_%i",tenary_end_label_id);
+	asm_push(".tenary_false_%i:",false_label_id);
+	codegen_generate_expressionable(node->tenary.false_node, history_down(history,0));
+	asm_push_ins_pop_or_ignore("eax",STACK_FRAME_ELEMENT_TYPE_PUSHED_VALUE,"result_value");
+	asm_push(".tenary_end_%i:",tenary_end_label_id);
+	
+}
+
 // It will push the result of the expressionable to the stack
 void codegen_generate_expressionable(struct node* node, struct history* history)
 {
@@ -874,7 +899,9 @@ void codegen_generate_expressionable(struct node* node, struct history* history)
         case NODE_TYPE_UNARY:
             codegen_generate_unary(node,history);
             break;
-		
+		case NODE_TYPE_TENARY:
+			codegen_generate_tenary(node,history);
+			break;
     }
 }
 
