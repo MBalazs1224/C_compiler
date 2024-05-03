@@ -307,6 +307,11 @@ bool is_parentheses(const char* op)
 	return S_EQ(op,"(");
 }
 
+bool is_left_operanded_unary_operator(const char* op)
+{
+	return S_EQ(op,"++") || S_EQ(op,"--");
+}
+
 bool unary_operand_compatible(struct token* token)
 {
 	return is_access_operator(token->sval) || is_array_operator(token->sval) || is_parentheses(token->sval);
@@ -342,7 +347,7 @@ bool op_is_indirection(const char* op)
 
 bool is_unary_operator(const char* op)
 {
-    return S_EQ(op,"-") || S_EQ(op,"!")  || S_EQ(op,"~") || S_EQ(op,"*") || S_EQ(op,"&");
+    return S_EQ(op,"-") || S_EQ(op,"!")  || S_EQ(op,"~") || S_EQ(op,"*") || S_EQ(op,"&") || S_EQ(op,"++") || S_EQ(op,"--") ;
 }
 bool op_is_address(const char* op)
 {

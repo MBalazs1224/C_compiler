@@ -7,14 +7,33 @@ main:
 push ebp
 mov ebp, esp
 sub esp, 16
-push dword 1
+push dword 0
 pop eax
 mov dword [ebp-4], eax
-push dword 1
+push dword [ebp-4]
 pop eax
-mov ecx, eax
-sal dword [ebp-4], cl
+dec eax
+push eax
+pop eax
+mov dword [ebp-4], eax
+push eax
+pop eax
+mov dword [ebp-8], eax
+lea ebx, [printf]
+push ebx
+pop ebx
+mov ecx, ebx
+push dword [ebp-8]
+mov eax, str_1
+push eax
+call ecx
+add esp, 8
+push eax
+pop eax
+push eax
+add esp, 4
 add esp, 16
 pop ebp
 ret
 section .rodata
+str_1: db '%','i',10, 0

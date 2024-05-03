@@ -435,9 +435,19 @@ struct parsed_switch_case
     // Index of parsed case
     int index;
 };
+
+enum
+{
+	// If it's not set then the unary is right operanded
+	// ++x -> right operanded
+	// x++ -> left operanded
+	UNARY_FLAG_IS_LEFT_OPERANDED_UNARY = 0b00000001
+};
+
 struct node;
 struct unary
 {
+	int flags;
     // "*" for pointer access... even for multiple pointer access (**) only the first operator is here
     const char* op;
     struct node* operand;
@@ -1175,7 +1185,7 @@ void make_case_node(struct node* exp_node);
 void make_tenary_node(struct node*true_node, struct node* false_node);
 void make_cast_node(struct datatype* dtype, struct node* operand_node);
 void make_union_node(const char* name, struct node* body_node);
-void make_unary_node(const char* op, struct node* operand_node);
+void make_unary_node(const char* op, struct node* operand_node,int flags);
 void make_default_node();
 bool keyword_is_datatype(const char *str);
 
@@ -1190,7 +1200,7 @@ bool node_is_struct_or_union_variable(struct node* node);
 struct node*variable_struct_or_union_body_node(struct node* node);
 struct node* variable_node_or_list(struct node* node);
 
-
+bool is_left_operanded_unary_operator(const char* op);
 // Variable access operators
 bool is_access_operator(const char* op);
 bool is_array_operator(const char* op);

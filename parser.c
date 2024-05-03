@@ -383,7 +383,7 @@ void parse_for_indirection_unary()
     struct node* unary_operand_node = node_pop();
 
     //Create a unary node
-    make_unary_node("*",unary_operand_node);
+    make_unary_node("*",unary_operand_node,0);
 
     // Set the pointer depth of the node
     struct node* unary_node = node_pop();
@@ -403,7 +403,7 @@ void parse_for_normal_unary()
 
     // Get the operand node from the stack and create a unary node from it
     struct node* unary_operand_node = node_pop();
-    make_unary_node(unary_op,unary_operand_node);
+    make_unary_node(unary_op,unary_operand_node,0);
 }
 void parser_deal_with_additional_expression();
 
@@ -421,6 +421,11 @@ void parse_for_unary()
 }
 
 void parse_for_parentheses(struct history* history);;
+
+void parse_for_left_operanded_unary(struct node* left_operand_node, const char* unary_op)
+{
+	make_unary_node(unary_op, left_operand_node, UNARY_FLAG_IS_LEFT_OPERANDED_UNARY);
+}
 
 void parse_exp_normal(struct history* history)
 {
@@ -443,7 +448,13 @@ void parse_exp_normal(struct history* history)
     token_next();
     // Pop off left node
     node_pop();
-
+	
+	if (is_left_operanded_unary_operator(op))
+	{
+		parse_for_left_operanded_unary(node_left,op);
+		return;
+	}
+	
     node_left->flags |= NODE_FLAG_INSIDE_EXPRESSION;
     // If the next token is an operator, it can be a unary
     if (token_peek_next()->type == TOKEN_TYPE_OPERATOR)

@@ -41,6 +41,7 @@ struct history
         struct history_exp exp;
     };
 };
+void codegen_generate_assignment_part(struct node* node, const char* op, struct history* history);
 void codegen_generate_body(struct node* node, struct history* history);;
 void codegen_generate_structure_push(struct resolver_entity* entity, struct history* history, int start_pos);
 bool codegen_resolve_node_for_value(struct node* node, struct history* history);
@@ -870,6 +871,44 @@ void codegen_generate_normal_unary(struct node *node, struct history *history)
     {
         codegen_generate_unary_indirection(node,history);
     }
+	else if(S_EQ(node->unary.op,"++"))
+	{
+		if (node->unary.flags & UNARY_FLAG_IS_LEFT_OPERANDED_UNARY)
+		{
+			//a++, first push the value of a to the stack so we can use it later, then increment it
+			asm_push_ins_push_with_data("eax",STACK_FRAME_ELEMENT_TYPE_PUSHED_VALUE,"result_value",0,&(struct stack_frame_data){.dtype = last_dtype});
+			asm_push("inc eax");
+			asm_push_ins_push_with_data("eax",STACK_FRAME_ELEMENT_TYPE_PUSHED_VALUE,"result_value",0,&(struct stack_frame_data){.dtype = last_dtype});
+			codegen_generate_assignment_part(node->unary.operand,"=",history);
+		}
+		else
+		{
+			//++a, first increment a then push it's value to the stack
+			asm_push("inc eax");
+			asm_push_ins_push_with_data("eax",STACK_FRAME_ELEMENT_TYPE_PUSHED_VALUE,"result_value",0,&(struct stack_frame_data){.dtype = last_dtype});
+			codegen_generate_assignment_part(node->unary.operand,"=",history);
+			asm_push_ins_push_with_data("eax",STACK_FRAME_ELEMENT_TYPE_PUSHED_VALUE,"result_value",0,&(struct stack_frame_data){.dtype = last_dtype});
+		}
+	}
+	else if(S_EQ(node->unary.op,"--"))
+	{
+		if (node->unary.flags & UNARY_FLAG_IS_LEFT_OPERANDED_UNARY)
+		{
+			//a--, first push the value of a to the stack so we can use it later, then decrement it
+			asm_push_ins_push_with_data("eax",STACK_FRAME_ELEMENT_TYPE_PUSHED_VALUE,"result_value",0,&(struct stack_frame_data){.dtype = last_dtype});
+			asm_push("dec eax");
+			asm_push_ins_push_with_data("eax",STACK_FRAME_ELEMENT_TYPE_PUSHED_VALUE,"result_value",0,&(struct stack_frame_data){.dtype = last_dtype});
+			codegen_generate_assignment_part(node->unary.operand,"=",history);
+		}
+		else
+		{
+			//..a, first decrement a then push it's value to the stack
+			asm_push("dec eax");
+			asm_push_ins_push_with_data("eax",STACK_FRAME_ELEMENT_TYPE_PUSHED_VALUE,"result_value",0,&(struct stack_frame_data){.dtype = last_dtype});
+			codegen_generate_assignment_part(node->unary.operand,"=",history);
+			asm_push_ins_push_with_data("eax",STACK_FRAME_ELEMENT_TYPE_PUSHED_VALUE,"result_value",0,&(struct stack_frame_data){.dtype = last_dtype});
+		}
+	}
 }
 
 void codegen_generate_unary(struct node *node, struct history *history)
