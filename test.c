@@ -1,13 +1,5 @@
-union abc
-{
-	int x;
-	int y;
-};
-
-union abc a;
+int printf(const char* s, ...);
 int main()
 {
-    int a, b;
-	a = 50;
-	b = 20;
+	printf("hello world %i\n",50);
 }
