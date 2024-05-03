@@ -1,40 +1,20 @@
 section .data
 section .text
 extern printf
-global set_dog
-; set_dog function
-set_dog:
+global special
+; special function
+special:
 push ebp
 mov ebp, esp
-sub esp, 32
-push dword 50
-push dword [ebp-4]
-; INDIRECTION
-pop ebx
-push ebx
-pop edx
+push dword [ebp+8]
+push dword [ebp+12]
+pop ecx
 pop eax
-mov dword [edx], eax
-lea ebx, [ebp-12]
-push ebx
-pop ebx
-; STRUCTURE PUSH
-push dword [ebx+8]
-push dword [ebx+4]
-push dword [ebx+0]
-; END STRUCTURE PUSH
-mov edx, [ebp+8]
+add eax, ecx
+push eax
 pop eax
-mov [edx+0], eax
-pop eax
-mov [edx+4], eax
-pop eax
-mov [edx+8], eax
-mov eax, [ebp+8]
-add esp, 32
 pop ebp
 ret
-add esp, 32
 pop ebp
 ret
 global main
@@ -42,83 +22,33 @@ global main
 main:
 push ebp
 mov ebp, esp
-sub esp, 16
-push dword 0
-pop eax
-mov dword [ebp-4], eax
-push dword 1
-pop eax
-cmp eax, 0
-je .if_2
-.entry_point_3:
-.switch_stmt_5:
-push dword [ebp-4]
-pop eax
-cmp eax,0
-je .switch_stmt_5_case_0
-jmp .exit_point_4
-.switch_stmt_5_case_0:
-; CASE 0
-.entry_point_6:
-.switch_stmt_8:
-push dword 5
-pop eax
-cmp eax,4
-je .switch_stmt_8_case_4
-cmp eax,5
-je .switch_stmt_8_case_5
-jmp .exit_point_7
-.switch_stmt_8_case_4:
-; CASE 4
-push dword 5
-pop eax
-neg eax
+lea ebx, [printf]
+push ebx
+pop ebx
+mov dword [function_call_1], ebx
+lea ebx, [special]
+push ebx
+pop ebx
+mov dword [function_call_2], ebx
+push dword 10
+push dword 10
+call [function_call_2]
+add esp, 8
 push eax
 pop eax
-mov dword [ebp-4], eax
-jmp .exit_point_7
-.switch_stmt_8_case_5:
-; CASE 5
-push dword [ebp-4]
-push dword 2
-pop ecx
-pop eax
-add eax, ecx
+push eax
+mov eax, str_3
+push eax
+call [function_call_1]
+add esp, 8
 push eax
 pop eax
-mov dword [ebp-4], eax
-jmp .exit_point_7
-.switch_stmt_8_end:
-.exit_point_7:
-jmp .exit_point_4
-.switch_stmt_5_end:
-.exit_point_4:
-.entry_point_9:
-.switch_stmt_11:
-push dword 4
-pop eax
-jmp .switch_stmt_11_case_default
-; DEFAULT CASE
-.switch_stmt_11_case_default:
-push dword [ebp-4]
-push dword [ebp-4]
-pop ecx
-pop eax
-add eax, ecx
 push eax
-pop eax
-mov dword [ebp-4], eax
-.switch_stmt_11_end:
-.exit_point_10:
-jmp .if_end_1
-.if_2:
-.if_end_1:
-push dword [ebp-4]
-pop eax
-add esp, 16
+add esp, 4
 pop ebp
 ret
-add esp, 16
-pop ebp
-ret
+section .data
+function_call_1: dd 0
+function_call_2: dd 0
 section .rodata
+str_3: db '%','i',10, 0

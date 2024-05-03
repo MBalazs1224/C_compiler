@@ -219,7 +219,10 @@ struct code_generator
     struct vector* entry_points;
     // vector of struct codegen_exit_point*
     struct vector* exit_points;
-
+	
+	// Vector of const char* that will go in the .data section
+	struct vector* custom_data_sections;
+	
     // vector of struct response*
     struct vector* responses;
 

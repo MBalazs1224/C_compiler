@@ -10,7 +10,6 @@ static struct compiler_process* current_process = NULL;
 static struct node* current_function = NULL;
 int codegen_remove_uninheritable_flags(int flags);
 void codegen_stack_add_no_compile_time_stack_frame_restore(size_t stack_size);
-
 void asm_pop_ebp_no_stack_frame_restore();
 
 enum
@@ -20,7 +19,18 @@ enum
 	CODEGEN_ENTITY_RULE_IS_GET_ADDRESS = 0b00000100,
 	CODEGEN_ENTITY_RULE_WILL_PEEK_AT_EBX = 0b00001000,
 };
-
+void asm_push_args(const char *ins, va_list args)
+{
+	va_list args2;
+	va_copy(args2, args);
+	vfprintf(stdout, ins, args);
+	fprintf(stdout, "\n");
+	if (current_process->ofile)
+	{
+		vfprintf(current_process->ofile, ins, args2);
+		fprintf(current_process->ofile, "\n");
+	}
+}
 bool asm_datatype_back(struct datatype* dtype_out);
 struct history_exp
 {
@@ -164,18 +174,7 @@ struct node* codegen_node_next()
 
 
 
-void asm_push_args(const char* ins, va_list args)
-{
-    va_list args2;
-    va_copy(args2,args);
-    vfprintf(stdout,ins,args);
-    fprintf(stdout, "\n");
-    if (current_process->ofile)
-    {
-        vfprintf(current_process->ofile,ins,args2);
-        fprintf(current_process->ofile,"\n");
-    }
-}
+
 
 int asm_push_ins_pop_or_ignore(const char* fmt, int expecting_stack_entity_type,const char* expecting_stack_entity_name,...)
 {
@@ -284,6 +283,17 @@ void asm_pop_ebp()
     asm_push_ins_pop("ebp",STACK_FRAME_ELEMENT_TYPE_SAVED_BP,"function_entry_saved_ebp");
 }
 
+void codegen_data_section_add(const char* data, ...)
+{
+	va_list args;
+	va_start(args,data);
+	char* new_data = malloc(256);
+	vsprintf(new_data,data,args);
+
+	vector_push(current_process->generator->custom_data_sections,&new_data);
+	
+}
+
 void codegen_stack_sub_with_name(size_t stack_size, const char*name)
 {
     if (stack_size != 0)
@@ -359,6 +369,7 @@ struct code_generator* codegenerator_new(struct compiler_process* process)
     generator->exit_points = vector_create(sizeof(struct codegen_exit_point*));
     generator->responses = vector_create(sizeof(struct response*));
 	generator->_switch.switches = vector_create(sizeof(struct generator_switch_stmt_entity));
+	generator->custom_data_sections = vector_create(sizeof(const char*));
     return generator;
 }
 
@@ -1487,11 +1498,13 @@ void codegen_generate_entity_access_for_function_call(struct resolver_result *re
     vector_set_flag(entity->func_call_data.arguments,VECTOR_FLAG_PEEK_DECREMENT);
     vector_set_peek_pointer_end(entity->func_call_data.arguments);
     struct node* node = vector_peek_ptr(entity->func_call_data.arguments);
-
-    asm_push_ins_pop("ebx",STACK_FRAME_ELEMENT_TYPE_PUSHED_VALUE,"result_value");
-
-    // During the generation ebx might be used that's why we move its value to ecx
-    asm_push("mov ecx, ebx");
+	
+	// We will store the function address in a label and call that when we need it
+	// func(special()) -> without this both special's and func's address would be stored in the same register and because special is generated later it would overwrite the address of func
+	int function_call_label_id = codegen_label_count();
+	codegen_data_section_add("function_call_%i: dd 0",function_call_label_id);
+	asm_push_ins_pop("ebx",STACK_FRAME_ELEMENT_TYPE_PUSHED_VALUE,"result_value");
+	asm_push("mov dword [function_call_%i], ebx",function_call_label_id);
 
     if (datatype_is_struct_or_union_non_pointer(&entity->dtype))
     {
@@ -1507,7 +1520,7 @@ void codegen_generate_entity_access_for_function_call(struct resolver_result *re
         node = vector_peek_ptr(entity->func_call_data.arguments);
     }
     // Call the function
-    asm_push("call ecx");
+    asm_push("call [function_call_%i]",function_call_label_id);
 
     size_t stack_size = entity->func_call_data.stack_size;
 
@@ -2624,6 +2637,19 @@ void codegen_generate_rod()
     codegen_write_strings();
 }
 
+void codegen_generate_data_section_add_ons()
+{
+	// We can have multiple data sections, NASM will just merge them
+	asm_push("section .data");
+	vector_set_peek_pointer(current_process->generator->custom_data_sections,0);
+	const char* str = vector_peek_ptr(current_process->generator->custom_data_sections);
+	while (str)
+	{
+		asm_push(str);
+		str = vector_peek_ptr(current_process->generator->custom_data_sections);
+	}
+}
+
 int codegen(struct compiler_process* process)
 {
     current_process = process;
@@ -2638,7 +2664,8 @@ int codegen(struct compiler_process* process)
     // Generate the code section of the assembly
     codegen_generate_root();
     codegen_finish_scope(0);
-
+	
+	codegen_generate_data_section_add_ons();
     // Generate read only data (strings etc.)
 
     codegen_generate_rod();
