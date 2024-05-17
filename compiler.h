@@ -272,6 +272,13 @@ enum
     PARSE_ALL_OK,
     PARSE_GENERAL_ERROR
 };
+int validate(struct compiler_process* process);
+
+enum
+{
+	VALIDATION_ALL_OK,
+	VALIDATION_GENERAL_ERROR
+};
 
 enum
 {
