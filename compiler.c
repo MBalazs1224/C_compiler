@@ -7,6 +7,17 @@ struct lex_process_functions compiler_lex_functions = {
     .peek_char = compiler_process_peek_char,
     .push_char = compiler_process_push_char};
 
+void compiler_node_error(struct node* node, const char* message, ...)
+{
+	va_list args;
+	va_start(args,message);
+	vfprintf(stderr,message,args);
+	va_end(args);
+	
+	fprintf(stderr, " on line %i, col %i in file %s\n",node->pos.line,node->pos.col,node->pos.filename);
+	exit(-1);
+}
+
 void compiler_error(struct compiler_process *compiler, const char *msg, ...)
 {
     va_list args;

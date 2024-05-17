@@ -1143,9 +1143,9 @@ int parse(struct compiler_process* process);
 int codegen(struct compiler_process* process);
 struct code_generator* codegenerator_new(struct compiler_process* process);
 void compiler_error(struct compiler_process *compiler, const char *msg, ...);
-
+void compiler_node_error(struct node* node, const char* message, ...);
 void compiler_warning(struct compiler_process *compiler, const char *msg, ...);
-
+struct symbol* symresolver_register_symbol(struct compiler_process* process, const char* sym_name, int type, void* data);
 //Builds tokens for the input string
 struct lex_process* token_build_for_string(struct compiler_process* compiler,const char*str);
 bool token_is_keyword(struct token *token, const char *value);

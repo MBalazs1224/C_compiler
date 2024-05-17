@@ -1,15 +1,8 @@
 int printf(const char* s, ...);
 
-struct dog
+int main()
 {
-	int a;
-	int b;
-	int* c;
-};
 
-int special(int a, int b)
-{
-	return a + b;
 }
 int main()
 {
