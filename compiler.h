@@ -1313,7 +1313,7 @@ size_t function_node_stack_size(struct node* node);
 struct resolver_default_entity_data* resolver_default_entity_private(struct resolver_entity* entity);
 struct resolver_default_scope_data* resolver_default_scope(struct resolver_scope* scope);
 char* resolver_default_stack_asm_address(int stack_offset, char* out);
-
+struct resolver_entity* resolver_get_variable_from_local_scope(struct resolver_process* resolver, const char* var_name);
 struct resolver_default_entity_data* resolver_default_new_entity_data();
 
 void resolver_default_global_asm_address(const char* name, int offset, char* address_out);

@@ -1,10 +1,5 @@
 int printf(const char* s, ...);
-
-int main()
+int test(int a, int a)
 {
-
-}
-int main()
-{
-	printf("%i\n", special(10,10));
+	return 0;
 }
